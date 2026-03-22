@@ -19,7 +19,6 @@ export default function App() {
   const [level, setLevel] = useLocalStorage<Level | undefined>('user_level', undefined);
   const [darkMode, setDarkMode] = useLocalStorage<boolean>('dark_mode', false);
 
-  // API 키가 없으면 설정 화면
   if (!apiKey) {
     return <ApiKeySetup onApiKeySet={setApiKey} />;
   }
@@ -30,7 +29,6 @@ export default function App() {
   };
 
   const handleNavigate = (target: AppScreen) => {
-    // 레벨 미설정 시 학습 화면 접근 제한
     if (target === 'learning' && !level) {
       setScreen('level-test');
       return;
@@ -38,138 +36,133 @@ export default function App() {
     setScreen(target);
   };
 
-  const bgColor = darkMode ? '#0f172a' : '#FFF9F0';
-  const textColor = darkMode ? '#e2e8f0' : '#1f2937';
+  const bgColor = darkMode ? '#0f172a' : '#f8f6f0';
+  const textColor = darkMode ? '#e2e8f0' : '#2e2f2b';
 
   return (
     <div
       className="min-h-screen"
-      style={{ background: bgColor, color: textColor, fontFamily: 'Noto Sans KR, sans-serif' }}
+      style={{ background: bgColor, color: textColor, fontFamily: '"Be Vietnam Pro", "Noto Sans KR", sans-serif' }}
     >
       <Navigation
         screen={screen}
         onNavigate={handleNavigate}
-        nativeLanguage={nativeLanguage}
-        level={level}
         darkMode={darkMode}
         onToggleDark={() => setDarkMode((d: boolean) => !d)}
       />
 
-      <main className="pt-2 max-w-3xl mx-auto">
-        <AnimatePresence mode="wait">
-          {screen === 'home' && (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <HomeScreen
-                nativeLanguage={nativeLanguage}
-                level={level}
-                onNavigate={handleNavigate}
-                onLanguageSelect={(lang: NativeLanguage) => {
-                  setNativeLanguage(lang);
-                }}
-                darkMode={darkMode}
-              />
-            </motion.div>
-          )}
+      <AnimatePresence mode="wait">
+        {/* Home: full-width island map */}
+        {screen === 'home' && (
+          <motion.div
+            key="home"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <HomeScreen
+              nativeLanguage={nativeLanguage}
+              level={level}
+              onNavigate={handleNavigate}
+              onLanguageSelect={(lang: NativeLanguage) => setNativeLanguage(lang)}
+              darkMode={darkMode}
+            />
+          </motion.div>
+        )}
 
-          {screen === 'translate' && (
-            <motion.div
-              key="translate"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              {nativeLanguage ? (
-                <TranslationCardView
-                  apiKey={apiKey}
-                  nativeLanguage={nativeLanguage}
-                  darkMode={darkMode}
-                />
-              ) : (
-                <div className="p-4 text-center py-12">
-                  <p className="text-gray-400 mb-3">먼저 홈에서 모국어를 선택해주세요!</p>
-                  <button
-                    onClick={() => setScreen('home')}
-                    className="px-4 py-2 rounded-xl text-white"
-                    style={{ background: '#FF6B6B' }}
+        {/* Other screens: constrained width */}
+        {screen !== 'home' && (
+          <motion.div
+            key="inner"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="pt-20 pb-28 md:pb-8"
+          >
+            <main className="max-w-3xl mx-auto px-4">
+              <AnimatePresence mode="wait">
+                {screen === 'translate' && (
+                  <motion.div
+                    key="translate"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
                   >
-                    홈으로 가기
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          )}
+                    {nativeLanguage ? (
+                      <TranslationCardView apiKey={apiKey} nativeLanguage={nativeLanguage} darkMode={darkMode} />
+                    ) : (
+                      <div className="p-4 text-center py-12">
+                        <p className="text-gray-400 mb-3">먼저 홈에서 모국어를 선택해주세요!</p>
+                        <button
+                          onClick={() => setScreen('home')}
+                          className="px-4 py-2 rounded-xl text-white"
+                          style={{ background: '#705900' }}
+                        >
+                          홈으로 가기
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
 
-          {screen === 'level-test' && (
-            <motion.div
-              key="level-test"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <LevelTest
-                apiKey={apiKey}
-                onLevelSet={handleLevelSet}
-                darkMode={darkMode}
-              />
-            </motion.div>
-          )}
+                {screen === 'level-test' && (
+                  <motion.div
+                    key="level-test"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                  >
+                    <LevelTest apiKey={apiKey} onLevelSet={handleLevelSet} darkMode={darkMode} />
+                  </motion.div>
+                )}
 
-          {screen === 'learning' && level && nativeLanguage && (
-            <motion.div
-              key="learning"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <LearningContent
-                apiKey={apiKey}
-                level={level}
-                nativeLanguage={nativeLanguage}
-                darkMode={darkMode}
-              />
-            </motion.div>
-          )}
+                {screen === 'learning' && level && nativeLanguage && (
+                  <motion.div
+                    key="learning"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                  >
+                    <LearningContent apiKey={apiKey} level={level} nativeLanguage={nativeLanguage} darkMode={darkMode} />
+                  </motion.div>
+                )}
 
-          {screen === 'learning' && (!level || !nativeLanguage) && (
-            <motion.div
-              key="learning-gate"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="p-4 text-center py-12"
-            >
-              <div className="text-5xl mb-3">📝</div>
-              <p className="text-gray-400 mb-3">먼저 수준 진단을 받아야 해요!</p>
-              <button
-                onClick={() => setScreen('level-test')}
-                className="px-4 py-2 rounded-xl text-white"
-                style={{ background: '#4ECDC4' }}
-              >
-                진단 받기
-              </button>
-            </motion.div>
-          )}
+                {screen === 'learning' && (!level || !nativeLanguage) && (
+                  <motion.div
+                    key="learning-gate"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-4 text-center py-12"
+                  >
+                    <div className="text-5xl mb-3">📝</div>
+                    <p className="text-gray-400 mb-3">먼저 수준 진단을 받아야 해요!</p>
+                    <button
+                      onClick={() => setScreen('level-test')}
+                      className="px-4 py-2 rounded-xl text-white"
+                      style={{ background: '#705900' }}
+                    >
+                      진단 받기
+                    </button>
+                  </motion.div>
+                )}
 
-          {screen === 'progress' && (
-            <motion.div
-              key="progress"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <ProgressView
-                nativeLanguage={nativeLanguage ?? 'en'}
-                level={level}
-                darkMode={darkMode}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
+                {screen === 'progress' && (
+                  <motion.div
+                    key="progress"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                  >
+                    <ProgressView nativeLanguage={nativeLanguage ?? 'en'} level={level} darkMode={darkMode} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </main>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

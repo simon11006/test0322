@@ -1,112 +1,97 @@
-import { motion } from 'framer-motion';
-import type { AppScreen, Level, NativeLanguage } from '../types';
-import { getLanguageConfig } from '../utils/languages';
-import { LEVEL_CONFIG } from '../utils/levelUtils';
+import type { AppScreen } from '../types';
 
 interface NavigationProps {
   screen: AppScreen;
   onNavigate: (screen: AppScreen) => void;
-  nativeLanguage?: NativeLanguage;
-  level?: Level;
   darkMode: boolean;
   onToggleDark: () => void;
 }
 
 const NAV_ITEMS: { screen: AppScreen; label: string; icon: string }[] = [
-  { screen: 'home',      label: '홈',      icon: '🏠' },
-  { screen: 'translate', label: '번역',    icon: '🔤' },
-  { screen: 'level-test', label: '진단',   icon: '📝' },
-  { screen: 'learning',  label: '학습',    icon: '📚' },
-  { screen: 'progress',  label: '기록',    icon: '📊' },
+  { screen: 'home',       label: 'Map',     icon: 'map' },
+  { screen: 'learning',   label: 'Lessons', icon: 'auto_stories' },
+  { screen: 'level-test', label: 'Quizzes', icon: 'quiz' },
+  { screen: 'progress',   label: 'Rewards', icon: 'military_tech' },
 ];
 
-export default function Navigation({
-  screen,
-  onNavigate,
-  nativeLanguage,
-  level,
-  darkMode,
-  onToggleDark,
-}: NavigationProps) {
-  const langConfig = nativeLanguage ? getLanguageConfig(nativeLanguage) : null;
-  const levelConfig = level ? LEVEL_CONFIG[level] : null;
-
+export default function Navigation({ screen, onNavigate, darkMode, onToggleDark }: NavigationProps) {
   return (
     <>
-      {/* 상단 헤더 */}
-      <header
-        className="sticky top-0 z-50 px-4 py-3 flex items-center justify-between shadow-sm"
-        style={{ background: darkMode ? '#1a1a2e' : 'white' }}
-      >
-        <button
-          onClick={() => onNavigate('home')}
-          className="flex items-center gap-2"
-        >
-          <span className="text-2xl">🌟</span>
-          <span
-            className="text-xl font-bold"
-            style={{
-              fontFamily: 'Jua, sans-serif',
-              color: '#FF6B6B',
-            }}
-          >
-            한국어 배워요
-          </span>
-        </button>
-
-        {/* PC/태블릿 가로 네비게이션 */}
-        <nav className="hidden md:flex items-center gap-1">
-          {NAV_ITEMS.map(item => {
-            const isActive = screen === item.screen;
-            return (
-              <button
-                key={item.screen}
-                onClick={() => onNavigate(item.screen)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all"
-                style={{
-                  background: isActive ? '#FFF0EE' : 'transparent',
-                  color: isActive ? '#FF6B6B' : darkMode ? '#9CA3AF' : '#6B7280',
-                  fontFamily: 'Noto Sans KR, sans-serif',
-                }}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* 언어 배지 */}
-          {langConfig && (
-            <span className="text-sm px-2 py-1 rounded-full bg-gray-100 hidden sm:inline-flex">
-              {langConfig.flag} {langConfig.name}
-            </span>
-          )}
-          {/* 레벨 배지 */}
-          {levelConfig && (
-            <span
-              className={`text-sm px-2 py-1 rounded-full hidden sm:inline-flex ${levelConfig.bg} ${levelConfig.color}`}
-            >
-              {levelConfig.emoji} {levelConfig.label}
-            </span>
-          )}
-          {/* 다크모드 토글 */}
-          <button
-            onClick={onToggleDark}
-            className="text-xl p-1 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-        </div>
-      </header>
-
-      {/* 하단 탭 네비게이션 (모바일 전용) */}
+      {/* Top App Bar */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around py-2 border-t"
+        className="fixed top-0 w-full z-50 backdrop-blur-md"
         style={{
-          background: darkMode ? '#1a1a2e' : 'white',
-          borderColor: darkMode ? '#333' : '#E5E7EB',
+          background: darkMode ? 'rgba(26,27,24,0.85)' : 'rgba(248,246,240,0.85)',
+          boxShadow: '0 20px 40px rgba(46,47,43,0.06)',
+        }}
+      >
+        <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+          {/* Logo */}
+          <button
+            onClick={() => onNavigate('home')}
+            className="text-2xl font-black tracking-tight"
+            style={{ color: darkMode ? '#fdd34d' : '#705900', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+          >
+            Storybook Learning
+          </button>
+
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-8">
+            {NAV_ITEMS.map(item => {
+              const isActive = screen === item.screen;
+              return (
+                <button
+                  key={item.screen}
+                  onClick={() => onNavigate(item.screen)}
+                  className="font-bold text-lg transition-colors duration-300 rounded-lg px-3 py-1"
+                  style={{
+                    fontFamily: '"Plus Jakarta Sans", sans-serif',
+                    color: isActive ? (darkMode ? '#fdd34d' : '#705900') : (darkMode ? '#aeada8' : '#5c5d58'),
+                    borderBottom: isActive ? `2px solid ${darkMode ? '#fdd34d' : '#705900'}` : '2px solid transparent',
+                  }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onToggleDark}
+              className="p-2 rounded-full hover:bg-black/10 transition-colors active:scale-95"
+              style={{ color: darkMode ? '#fdd34d' : '#705900' }}
+            >
+              <span className="material-symbols-outlined">
+                {darkMode ? 'light_mode' : 'dark_mode'}
+              </span>
+            </button>
+            <button
+              className="p-2 rounded-full hover:bg-black/10 transition-colors active:scale-95"
+              style={{ color: darkMode ? '#fdd34d' : '#705900' }}
+            >
+              <span className="material-symbols-outlined">notifications</span>
+            </button>
+            <div
+              className="h-10 w-10 rounded-full flex items-center justify-center border-2 text-xl overflow-hidden"
+              style={{ background: '#fdd34d', borderColor: '#705900' }}
+            >
+              🧒
+            </div>
+          </div>
+        </div>
+        <div className="h-[1px] w-full opacity-20" style={{ background: '#5c5c57' }} />
+      </nav>
+
+      {/* Bottom Nav (Mobile only) */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-end px-4 pb-6 pt-2 z-50"
+        style={{
+          background: darkMode ? 'rgba(26,27,24,0.92)' : 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(8px)',
+          borderRadius: '3rem 3rem 0 0',
+          boxShadow: '0 -10px 30px rgba(46,47,43,0.08)',
         }}
       >
         {NAV_ITEMS.map(item => {
@@ -115,20 +100,29 @@ export default function Navigation({
             <button
               key={item.screen}
               onClick={() => onNavigate(item.screen)}
-              className="flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all"
-              style={{ color: isActive ? '#FF6B6B' : darkMode ? '#9CA3AF' : '#6B7280' }}
+              className="flex flex-col items-center justify-center"
             >
-              {isActive && (
-                <motion.div
-                  layoutId="nav-indicator"
-                  className="absolute bottom-0 w-1 h-1 rounded-full"
-                  style={{ background: '#FF6B6B' }}
-                />
+              {isActive ? (
+                <div
+                  className="flex flex-col items-center rounded-full p-3 mb-2 shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #705900, #fdd34d)', color: 'white' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 22 }}>{item.icon}</span>
+                  <span style={{ fontSize: 10, fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 500, marginTop: 2 }}>
+                    {item.label.toUpperCase()}
+                  </span>
+                </div>
+              ) : (
+                <div
+                  className="flex flex-col items-center p-2"
+                  style={{ color: darkMode ? '#aeada8' : '#5c5d58' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 22 }}>{item.icon}</span>
+                  <span style={{ fontSize: 10, fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 500, marginTop: 2 }}>
+                    {item.label.toUpperCase()}
+                  </span>
+                </div>
               )}
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs font-medium" style={{ fontFamily: 'Noto Sans KR, sans-serif' }}>
-                {item.label}
-              </span>
             </button>
           );
         })}
