@@ -1,53 +1,57 @@
-import type { AppScreen } from '../types';
+import type { AppScreen, NativeLanguage } from '../types';
+import { getUIStrings } from '../utils/uiStrings';
 
 interface NavigationProps {
   screen: AppScreen;
   onNavigate: (screen: AppScreen) => void;
+  nativeLanguage?: NativeLanguage;
   darkMode: boolean;
   onToggleDark: () => void;
 }
 
-const NAV_ITEMS: { screen: AppScreen; label: string; icon: string }[] = [
-  { screen: 'home',       label: 'Map',     icon: 'map' },
-  { screen: 'learning',   label: 'Lessons', icon: 'auto_stories' },
-  { screen: 'level-test', label: 'Quizzes', icon: 'quiz' },
-  { screen: 'progress',   label: 'Rewards', icon: 'military_tech' },
-];
+export default function Navigation({ screen, onNavigate, nativeLanguage, darkMode, onToggleDark }: NavigationProps) {
+  const t = getUIStrings(nativeLanguage);
 
-export default function Navigation({ screen, onNavigate, darkMode, onToggleDark }: NavigationProps) {
+  const navItems: { screen: AppScreen; label: string; icon: string }[] = [
+    { screen: 'home',       label: t.nav.map,     icon: 'map' },
+    { screen: 'learning',   label: t.nav.lessons,  icon: 'auto_stories' },
+    { screen: 'level-test', label: t.nav.quizzes,  icon: 'quiz' },
+    { screen: 'progress',   label: t.nav.rewards,  icon: 'military_tech' },
+  ];
+
+  const navBg = darkMode ? 'rgba(26,27,24,0.88)' : 'rgba(248,246,240,0.88)';
+  const logoBg = darkMode ? '#fdd34d' : '#705900';
+
   return (
     <>
-      {/* Top App Bar */}
+      {/* ── Top App Bar ──────────────────────────────────────────────────── */}
       <nav
         className="fixed top-0 w-full z-50 backdrop-blur-md"
-        style={{
-          background: darkMode ? 'rgba(26,27,24,0.85)' : 'rgba(248,246,240,0.85)',
-          boxShadow: '0 20px 40px rgba(46,47,43,0.06)',
-        }}
+        style={{ background: navBg, boxShadow: '0 1px 0 rgba(92,92,87,0.15)' }}
       >
-        <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between px-5 py-3 max-w-7xl mx-auto">
           {/* Logo */}
           <button
             onClick={() => onNavigate('home')}
-            className="text-2xl font-black tracking-tight"
-            style={{ color: darkMode ? '#fdd34d' : '#705900', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+            className="text-xl font-black tracking-tight"
+            style={{ color: logoBg, fontFamily: '"Plus Jakarta Sans", sans-serif' }}
           >
             Storybook Learning
           </button>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-8">
-            {NAV_ITEMS.map(item => {
+          {/* Desktop nav links */}
+          <div className="hidden md:flex items-center gap-1">
+            {navItems.map(item => {
               const isActive = screen === item.screen;
               return (
                 <button
                   key={item.screen}
                   onClick={() => onNavigate(item.screen)}
-                  className="font-bold text-lg transition-colors duration-300 rounded-lg px-3 py-1"
+                  className="px-4 py-2 rounded-xl font-bold text-base transition-colors"
                   style={{
                     fontFamily: '"Plus Jakarta Sans", sans-serif',
-                    color: isActive ? (darkMode ? '#fdd34d' : '#705900') : (darkMode ? '#aeada8' : '#5c5d58'),
-                    borderBottom: isActive ? `2px solid ${darkMode ? '#fdd34d' : '#705900'}` : '2px solid transparent',
+                    color: isActive ? logoBg : (darkMode ? '#aeada8' : '#5c5d58'),
+                    background: isActive ? (darkMode ? 'rgba(253,211,77,0.12)' : 'rgba(112,89,0,0.08)') : 'transparent',
                   }}
                 >
                   {item.label}
@@ -56,73 +60,75 @@ export default function Navigation({ screen, onNavigate, darkMode, onToggleDark 
             })}
           </div>
 
-          {/* Right Actions */}
-          <div className="flex items-center gap-3">
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
             <button
               onClick={onToggleDark}
-              className="p-2 rounded-full hover:bg-black/10 transition-colors active:scale-95"
-              style={{ color: darkMode ? '#fdd34d' : '#705900' }}
+              className="p-2 rounded-full transition-colors hover:bg-black/10 active:scale-95"
+              style={{ color: logoBg }}
             >
-              <span className="material-symbols-outlined">
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>
                 {darkMode ? 'light_mode' : 'dark_mode'}
               </span>
             </button>
-            <button
-              className="p-2 rounded-full hover:bg-black/10 transition-colors active:scale-95"
-              style={{ color: darkMode ? '#fdd34d' : '#705900' }}
-            >
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
             <div
-              className="h-10 w-10 rounded-full flex items-center justify-center border-2 text-xl overflow-hidden"
+              className="w-9 h-9 rounded-full flex items-center justify-center border-2 text-lg"
               style={{ background: '#fdd34d', borderColor: '#705900' }}
             >
               🧒
             </div>
           </div>
         </div>
-        <div className="h-[1px] w-full opacity-20" style={{ background: '#5c5c57' }} />
       </nav>
 
-      {/* Bottom Nav (Mobile only) */}
+      {/* ── Bottom Nav (Mobile) ───────────────────────────────────────────── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-end px-4 pb-6 pt-2 z-50"
+        className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pt-2 pb-5"
         style={{
-          background: darkMode ? 'rgba(26,27,24,0.92)' : 'rgba(255,255,255,0.92)',
-          backdropFilter: 'blur(8px)',
-          borderRadius: '3rem 3rem 0 0',
-          boxShadow: '0 -10px 30px rgba(46,47,43,0.08)',
+          background: darkMode ? 'rgba(26,27,24,0.95)' : 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '1.5rem 1.5rem 0 0',
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
         }}
       >
-        {NAV_ITEMS.map(item => {
+        {navItems.map(item => {
           const isActive = screen === item.screen;
           return (
             <button
               key={item.screen}
               onClick={() => onNavigate(item.screen)}
-              className="flex flex-col items-center justify-center"
+              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all"
+              style={{ minWidth: 60 }}
             >
-              {isActive ? (
-                <div
-                  className="flex flex-col items-center rounded-full p-3 mb-2 shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #705900, #fdd34d)', color: 'white' }}
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
+                style={{
+                  background: isActive ? 'linear-gradient(135deg, #705900, #fdd34d)' : 'transparent',
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    fontSize: 22,
+                    color: isActive ? 'white' : (darkMode ? '#aeada8' : '#5c5d58'),
+                    fontVariationSettings: isActive ? '"FILL" 1' : '"FILL" 0',
+                  }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: 22 }}>{item.icon}</span>
-                  <span style={{ fontSize: 10, fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 500, marginTop: 2 }}>
-                    {item.label.toUpperCase()}
-                  </span>
-                </div>
-              ) : (
-                <div
-                  className="flex flex-col items-center p-2"
-                  style={{ color: darkMode ? '#aeada8' : '#5c5d58' }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: 22 }}>{item.icon}</span>
-                  <span style={{ fontSize: 10, fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 500, marginTop: 2 }}>
-                    {item.label.toUpperCase()}
-                  </span>
-                </div>
-              )}
+                  {item.icon}
+                </span>
+              </div>
+              <span
+                className="text-[10px] font-bold leading-tight"
+                style={{
+                  color: isActive ? logoBg : (darkMode ? '#aeada8' : '#5c5d58'),
+                  fontFamily: '"Plus Jakarta Sans", sans-serif',
+                  maxWidth: 60,
+                  textAlign: 'center',
+                  wordBreak: 'keep-all',
+                }}
+              >
+                {item.label}
+              </span>
             </button>
           );
         })}

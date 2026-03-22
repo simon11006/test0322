@@ -47,6 +47,7 @@ export default function App() {
       <Navigation
         screen={screen}
         onNavigate={handleNavigate}
+        nativeLanguage={nativeLanguage}
         darkMode={darkMode}
         onToggleDark={() => setDarkMode((d: boolean) => !d)}
       />

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { AppScreen, Level, NativeLanguage, LearningProgress } from '../types';
 import { SUPPORTED_LANGUAGES, getLanguageConfig } from '../utils/languages';
+import { getUIStrings } from '../utils/uiStrings';
 
 interface HomeScreenProps {
   nativeLanguage?: NativeLanguage;
@@ -18,11 +19,8 @@ function getStreak(progressData: LearningProgress[]): number {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
-    if (progressData.some(p => p.date === dateStr)) {
-      streak++;
-    } else {
-      break;
-    }
+    if (progressData.some(p => p.date === dateStr)) streak++;
+    else break;
   }
   return streak;
 }
@@ -37,8 +35,51 @@ function getXPInfo(level?: Level) {
   return { total: 1000, ...map[level] };
 }
 
-export default function HomeScreen({ nativeLanguage, level, onNavigate, onLanguageSelect, darkMode }: HomeScreenProps) {
-  const progressData: LearningProgress[] = JSON.parse(localStorage.getItem('learning_progress') ?? '[]');
+// ── Language Grid (공용) ──────────────────────────────────────────────────────
+function LanguageGrid({
+  selected,
+  onSelect,
+  darkMode,
+}: {
+  selected?: NativeLanguage;
+  onSelect: (lang: NativeLanguage) => void;
+  darkMode: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {SUPPORTED_LANGUAGES.map(lang => {
+        const isSelected = selected === lang.code;
+        return (
+          <button
+            key={lang.code}
+            onClick={() => onSelect(lang.code)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+            style={{
+              background: isSelected ? '#705900' : darkMode ? '#3a3b38' : '#f2f1ea',
+              color: isSelected ? '#fdd34d' : darkMode ? '#aeada8' : '#2e2f2b',
+              border: isSelected ? '2px solid #fdd34d40' : '2px solid transparent',
+            }}
+          >
+            <span className="text-lg">{lang.flag}</span>
+            <span className="truncate">{lang.nativeName.split(' ')[0]}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+export default function HomeScreen({
+  nativeLanguage,
+  level,
+  onNavigate,
+  onLanguageSelect,
+  darkMode,
+}: HomeScreenProps) {
+  const progressData: LearningProgress[] = JSON.parse(
+    localStorage.getItem('learning_progress') ?? '[]',
+  );
   const streak = getStreak(progressData);
   const totalWords = progressData.reduce((sum, p) => sum + (p.wordsLearned ?? 0), 0);
   const xp = getXPInfo(level);
@@ -47,296 +88,285 @@ export default function HomeScreen({ nativeLanguage, level, onNavigate, onLangua
   const node1Done = !!nativeLanguage;
   const node2Done = !!level;
 
+  const t = getUIStrings(nativeLanguage);
   const sidebarBg = darkMode ? '#1e1f1c' : '#f2f1ea';
-  const cardBg = darkMode ? '#2e2f2b' : 'white';
+  const cardBg = darkMode ? '#2a2b28' : 'white';
   const textPrimary = darkMode ? '#fdd34d' : '#705900';
   const textMuted = darkMode ? '#aeada8' : '#5c5d58';
 
   return (
-    <div className="pt-20 pb-24 md:pb-0 min-h-screen flex">
-      {/* ── Sidebar (Desktop) ── */}
+    <div className="pt-20 pb-24 md:pb-0 min-h-screen flex flex-col md:flex-row">
+
+      {/* ── Sidebar (Desktop) ─────────────────────────────────────────────── */}
       <aside
-        className="hidden md:flex flex-col w-72 p-6 gap-6 sticky top-20 overflow-y-auto"
+        className="hidden md:flex flex-col w-72 p-5 gap-5 sticky top-20 overflow-y-auto shrink-0"
         style={{ height: 'calc(100vh - 80px)', background: sidebarBg }}
       >
-        {/* XP Progress Card */}
-        <div className="p-6 rounded-xl shadow-sm" style={{ background: cardBg }}>
+        {/* XP Progress */}
+        <div className="p-5 rounded-2xl shadow-sm" style={{ background: cardBg }}>
           <h3
-            className="font-bold mb-2 text-lg"
-            style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', color: textPrimary }}
+            className="font-bold mb-3 text-sm uppercase tracking-widest"
+            style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', color: textMuted }}
           >
-            Current Progress
+            {t.home.progress}
           </h3>
-          <div className="flex items-center gap-4 mb-4">
-            <div
-              className="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest"
+          <div className="flex items-center gap-3 mb-3">
+            <span
+              className="rounded-full px-3 py-1 text-xs font-black"
               style={{ background: '#abf4ac', color: '#246830' }}
             >
               Lv. {xp.label}
-            </div>
+            </span>
             <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#eae8e2' }}>
               <div
-                className="h-full rounded-full transition-all duration-700"
+                className="h-full rounded-full"
                 style={{ width: `${xp.pct}%`, background: 'linear-gradient(90deg, #705900, #fdd34d)' }}
               />
             </div>
           </div>
-          <div className="flex justify-between text-sm font-medium" style={{ color: textMuted }}>
+          <div className="flex justify-between text-xs" style={{ color: textMuted }}>
             <span>{xp.current} XP</span>
             <span>{xp.total} XP</span>
           </div>
         </div>
 
-        {/* Language Buttons */}
+        {/* Language Selection — 항상 표시 */}
         <div className="flex flex-col gap-3">
-          <button
-            onClick={() => onNavigate('translate')}
-            className="flex items-center gap-4 p-4 rounded-xl font-semibold shadow-sm transition-all hover:opacity-90"
-            style={{ background: cardBg, color: darkMode ? '#e2e8f0' : '#2e2f2b', borderLeft: `4px solid ${textPrimary}` }}
-          >
-            <span className="material-symbols-outlined" style={{ color: textPrimary }}>translate</span>
-            <span>
-              {langConfig ? `${langConfig.flag} ${langConfig.nativeName}` : '언어 선택'}
-              <span className="text-xs font-normal ml-1 opacity-60">Learning</span>
-            </span>
-          </button>
-          <button
-            className="flex items-center gap-4 p-4 rounded-xl font-semibold transition-all hover:opacity-80"
-            style={{ color: textMuted }}
-          >
-            <span className="material-symbols-outlined">translate</span>
-            <span>한국어 <span className="text-xs font-normal opacity-60">Source</span></span>
-          </button>
-        </div>
-
-        {/* Daily Goal */}
-        <div
-          className="p-6 rounded-xl border"
-          style={{ background: 'rgba(84,199,252,0.12)', borderColor: 'rgba(84,199,252,0.35)' }}
-        >
-          <div className="flex items-center gap-2 mb-2 font-bold" style={{ color: '#006384' }}>
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: '"FILL" 1', color: '#006384' }}>
-              stars
-            </span>
-            <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>Daily Goal</span>
-          </div>
-          <p className="text-sm" style={{ color: '#003d54' }}>
-            {level
-              ? 'Keep learning to build your streak!'
-              : '언어를 선택하고 학습을 시작해보세요!'}
-          </p>
-        </div>
-
-        {/* Language grid (only when none selected) */}
-        {!nativeLanguage && (
-          <div>
-            <p
-              className="text-sm font-bold mb-3"
+          <div className="flex items-center justify-between">
+            <h3
+              className="font-bold text-sm"
               style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', color: textPrimary }}
             >
-              모국어를 선택하세요
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {SUPPORTED_LANGUAGES.slice(0, 8).map(lang => (
-                <button
-                  key={lang.code}
-                  onClick={() => onLanguageSelect(lang.code)}
-                  className="flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition-all"
-                  style={{ color: textMuted }}
-                >
-                  <span className="text-base">{lang.flag}</span>
-                  <span>{lang.nativeName.split(' ')[0]}</span>
-                </button>
-              ))}
-            </div>
+              {langConfig ? `${langConfig.flag} ${t.home.selectLanguage}` : t.home.selectLanguage}
+            </h3>
+            {langConfig && (
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#fdd34d30', color: textPrimary }}>
+                {langConfig.nativeName.split(' ')[0]}
+              </span>
+            )}
           </div>
-        )}
-      </aside>
-
-      {/* ── Map Canvas ── */}
-      <section className="flex-1 relative overflow-hidden anime-island-bg" style={{ minHeight: 800 }}>
-        {/* Decorative blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-10 w-32 h-16 rounded-full blur-2xl" style={{ background: 'rgba(255,255,255,0.4)' }} />
-          <div className="absolute top-60 right-20 w-48 h-24 rounded-full blur-3xl" style={{ background: 'rgba(255,255,255,0.3)' }} />
-          <div className="absolute bottom-40 left-1/4 w-64 h-32 rounded-full blur-2xl" style={{ background: 'rgba(255,255,255,0.2)' }} />
+          <LanguageGrid selected={nativeLanguage} onSelect={onLanguageSelect} darkMode={darkMode} />
         </div>
 
-        {/* Island nodes */}
-        <div className="relative w-full h-full flex items-center justify-center p-8">
-          <div className="relative w-full max-w-4xl" style={{ height: 600 }}>
+        {/* Quick Actions */}
+        <div className="flex flex-col gap-2 mt-auto">
+          <button
+            onClick={() => onNavigate('translate')}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
+            style={{ background: cardBg, color: darkMode ? '#e2e8f0' : '#2e2f2b', borderLeft: `3px solid ${textPrimary}` }}
+          >
+            <span className="material-symbols-outlined text-xl" style={{ color: textPrimary }}>translate</span>
+            {t.home.translate}
+          </button>
+          <button
+            onClick={() => onNavigate('level-test')}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
+            style={{ background: cardBg, color: darkMode ? '#e2e8f0' : '#2e2f2b', borderLeft: '3px solid #006384' }}
+          >
+            <span className="material-symbols-outlined text-xl" style={{ color: '#006384' }}>quiz</span>
+            {t.home.levelTest}
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Right Panel ───────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col">
+
+        {/* Map Canvas */}
+        <section
+          className="relative overflow-hidden anime-island-bg"
+          style={{ height: '65vh', minHeight: 420 }}
+        >
+          {/* Blobs */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-16 left-10 w-32 h-16 rounded-full blur-2xl" style={{ background: 'rgba(255,255,255,0.35)' }} />
+            <div className="absolute top-40 right-16 w-40 h-20 rounded-full blur-3xl" style={{ background: 'rgba(255,255,255,0.25)' }} />
+            <div className="absolute bottom-20 left-1/3 w-56 h-28 rounded-full blur-2xl" style={{ background: 'rgba(255,255,255,0.15)' }} />
+          </div>
+
+          {/* SVG path connecting nodes */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+            <path
+              d="M 18% 85% Q 32% 70% 45% 62% Q 40% 45% 38% 38% Q 52% 28% 66% 22%"
+              fill="none"
+              stroke="rgba(255,255,255,0.35)"
+              strokeWidth="4"
+              strokeDasharray="10 8"
+            />
+          </svg>
+
+          {/* Nodes */}
+          <div className="relative w-full h-full" style={{ zIndex: 1 }}>
 
             {/* Node 1 — 인사 배우기 */}
-            <div className="absolute flex flex-col items-center" style={{ top: '80%', left: '15%' }}>
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-4 border-white cursor-pointer"
-                style={{ background: node1Done ? '#abf4ac' : '#eae8e2' }}
-              >
-                {node1Done
-                  ? <span className="material-symbols-outlined text-3xl" style={{ color: '#246830', fontVariationSettings: '"FILL" 1' }}>check_circle</span>
-                  : <span className="material-symbols-outlined text-3xl" style={{ color: '#5c5c57' }}>lock</span>
-                }
-              </motion.div>
-              <span className="mt-2 px-4 py-1 rounded-full text-sm font-bold shadow-sm" style={{ background: 'rgba(255,255,255,0.85)' }}>
-                🌿 인사 배우기
-              </span>
-            </div>
+            <NodeItem
+              top="78%" left="12%"
+              label="🌿 인사 배우기"
+              done={node1Done}
+              onClick={() => {}}
+            />
 
             {/* Node 2 — 번역 학습 */}
-            <div className="absolute flex flex-col items-center" style={{ top: '60%', left: '42%' }}>
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-4 border-white cursor-pointer"
-                style={{ background: node2Done ? '#abf4ac' : '#eae8e2' }}
-                onClick={() => onNavigate('translate')}
-              >
-                {node2Done
-                  ? <span className="material-symbols-outlined text-3xl" style={{ color: '#246830', fontVariationSettings: '"FILL" 1' }}>check_circle</span>
-                  : <span className="material-symbols-outlined text-3xl" style={{ color: '#5c5c57' }}>lock</span>
-                }
-              </motion.div>
-              <span className="mt-2 px-4 py-1 rounded-full text-sm font-bold shadow-sm" style={{ background: 'rgba(255,255,255,0.85)' }}>
-                🔤 번역 학습
-              </span>
-            </div>
+            <NodeItem
+              top="56%" left="38%"
+              label="🔤 번역 학습"
+              done={node2Done}
+              onClick={() => onNavigate('translate')}
+            />
 
-            {/* Node 3 — Active: 레벨 학습 */}
-            <div className="absolute z-10 flex flex-col items-center" style={{ top: '35%', left: '28%' }}>
-              {/* Bouncing avatar above play button */}
-              <div className="bouncing-avatar absolute flex flex-col items-center" style={{ top: -88 }}>
+            {/* Node 3 — Active */}
+            <div className="absolute flex flex-col items-center" style={{ top: '28%', left: '26%', transform: 'translateX(-50%)' }}>
+              {/* Bouncing avatar */}
+              <div className="bouncing-avatar mb-1">
                 <div
-                  className="w-20 h-20 bg-white rounded-full p-1 shadow-2xl border-4 text-4xl flex items-center justify-center"
+                  className="w-14 h-14 bg-white rounded-full shadow-xl border-4 text-3xl flex items-center justify-center"
                   style={{ borderColor: '#705900' }}
                 >
                   🧒
                 </div>
-                <div style={{ width: 16, height: 16, background: '#705900', transform: 'rotate(45deg)', marginTop: -8 }} />
               </div>
-
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.93 }}
                 onClick={() => onNavigate(level ? 'learning' : 'level-test')}
-                className="w-24 h-24 rounded-full flex items-center justify-center border-4 border-white animate-pulse cursor-pointer"
+                className="w-20 h-20 rounded-full flex items-center justify-center border-4 border-white"
                 style={{
                   background: 'linear-gradient(135deg, #705900, #fdd34d)',
-                  boxShadow: '0 0 30px rgba(253,211,77,0.6)',
+                  boxShadow: '0 0 28px rgba(253,211,77,0.55)',
+                  animation: 'pulse 2s infinite',
                 }}
               >
-                <span
-                  className="material-symbols-outlined text-white"
-                  style={{ fontSize: 48, fontVariationSettings: '"FILL" 1' }}
-                >
+                <span className="material-symbols-outlined text-white" style={{ fontSize: 40, fontVariationSettings: '"FILL" 1' }}>
                   play_arrow
                 </span>
               </motion.button>
-
               <span
-                className="mt-4 px-6 py-2 rounded-full text-base font-black shadow-lg text-white"
+                className="mt-3 px-5 py-1.5 rounded-full text-sm font-black shadow-lg text-white"
                 style={{ background: '#705900' }}
               >
                 📚 레벨 학습
               </span>
             </div>
 
-            {/* Node 4 — Locked: 수준 진단 */}
-            <div className="absolute flex flex-col items-center" style={{ top: '18%', left: '62%', opacity: 0.65 }}>
-              <motion.div
-                whileHover={{ scale: 1.08 }}
-                className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-4 border-white cursor-pointer"
-                style={{ background: '#eae8e2' }}
-                onClick={() => onNavigate('level-test')}
-              >
-                <span className="material-symbols-outlined text-3xl" style={{ color: '#5c5c57' }}>lock</span>
-              </motion.div>
-              <span className="mt-2 px-4 py-1 rounded-full text-sm font-bold shadow-sm" style={{ background: 'rgba(255,255,255,0.5)' }}>
-                ✏️ 문장 만들기
-              </span>
-            </div>
+            {/* Node 4 — 수준 진단 (반투명) */}
+            <NodeItem
+              top="16%" left="60%"
+              label="📝 수준 진단"
+              locked
+              onClick={() => onNavigate('level-test')}
+            />
 
-            {/* Node 5 — Mystery cloud */}
-            <div className="absolute flex flex-col items-center" style={{ top: '3%', left: '80%' }}>
-              <div className="relative">
-                <div
-                  className="absolute rounded-full blur-2xl"
-                  style={{ inset: -40, background: 'rgba(255,255,255,0.25)' }}
-                />
-                <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg border-4 relative"
-                  style={{ background: 'rgba(234,232,226,0.45)', borderColor: 'rgba(255,255,255,0.5)' }}
-                >
-                  <span className="material-symbols-outlined text-3xl" style={{ color: '#777' }}>cloud</span>
-                </div>
+            {/* Node 5 — 미래 콘텐츠 */}
+            <div className="absolute flex flex-col items-center" style={{ top: '5%', left: '82%', transform: 'translateX(-50%)' }}>
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center border-4"
+                style={{ background: 'rgba(234,232,226,0.4)', borderColor: 'rgba(255,255,255,0.4)' }}
+              >
+                <span className="material-symbols-outlined" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 28 }}>cloud</span>
               </div>
             </div>
 
           </div>
-        </div>
 
-        {/* Floating Stats */}
-        <div className="absolute flex gap-4" style={{ top: 24, left: 24 }}>
-          <div className="glass-card px-4 py-2 rounded-full flex items-center gap-2 shadow-md">
-            <span className="material-symbols-outlined" style={{ color: '#705900', fontVariationSettings: '"FILL" 1' }}>
-              local_fire_department
-            </span>
-            <span className="font-bold" style={{ color: '#705900' }}>{streak}</span>
+          {/* Floating Stats */}
+          <div className="absolute flex gap-3" style={{ top: 16, right: 16 }}>
+            <div className="glass-card px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow">
+              <span className="material-symbols-outlined" style={{ color: '#705900', fontVariationSettings: '"FILL" 1', fontSize: 18 }}>local_fire_department</span>
+              <span className="font-bold text-sm" style={{ color: '#705900' }}>{streak}</span>
+            </div>
+            <div className="glass-card px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow">
+              <span className="material-symbols-outlined" style={{ color: '#006384', fontVariationSettings: '"FILL" 1', fontSize: 18 }}>database</span>
+              <span className="font-bold text-sm" style={{ color: '#006384' }}>{totalWords}</span>
+            </div>
           </div>
-          <div className="glass-card px-4 py-2 rounded-full flex items-center gap-2 shadow-md">
-            <span className="material-symbols-outlined" style={{ color: '#006384', fontVariationSettings: '"FILL" 1' }}>
-              database
-            </span>
-            <span className="font-bold" style={{ color: '#006384' }}>{totalWords}</span>
-          </div>
-        </div>
+        </section>
 
-        {/* FAB (mobile) */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={() => onNavigate(level ? 'learning' : 'level-test')}
-          className="md:hidden fixed rounded-full text-white shadow-2xl flex items-center justify-center z-50"
-          style={{
-            bottom: 112, right: 32,
-            width: 64, height: 64,
-            background: 'linear-gradient(135deg, #705900, #fdd34d)',
-          }}
+        {/* ── Mobile: Language + Quick Actions (항상 표시) ─────────────────── */}
+        <div
+          className="md:hidden flex-1 p-4 overflow-y-auto"
+          style={{ background: sidebarBg }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: 30 }}>play_arrow</span>
-        </motion.button>
-
-        {/* Mobile: language select overlay (when none chosen) */}
-        {!nativeLanguage && (
-          <div
-            className="md:hidden absolute left-0 right-0 px-6"
-            style={{ bottom: 100 }}
-          >
-            <div
-              className="rounded-2xl p-4 shadow-lg"
-              style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)' }}
+          {/* XP bar (mobile) */}
+          <div className="flex items-center gap-3 mb-4 px-1">
+            <span
+              className="rounded-full px-3 py-1 text-xs font-black shrink-0"
+              style={{ background: '#abf4ac', color: '#246830' }}
             >
-              <p
-                className="font-bold text-center mb-3"
-                style={{ color: '#705900', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
-              >
-                모국어를 선택해주세요
-              </p>
-              <div className="grid grid-cols-4 gap-2">
-                {SUPPORTED_LANGUAGES.slice(0, 8).map(lang => (
-                  <button
-                    key={lang.code}
-                    onClick={() => onLanguageSelect(lang.code)}
-                    className="flex flex-col items-center p-2 rounded-xl hover:bg-gray-100"
-                  >
-                    <span className="text-xl">{lang.flag}</span>
-                    <span className="text-xs mt-1" style={{ color: '#5c5c57' }}>
-                      {lang.nativeName.split(' ')[0]}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              Lv. {xp.label}
+            </span>
+            <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#ddd' }}>
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${xp.pct}%`, background: 'linear-gradient(90deg, #705900, #fdd34d)' }}
+              />
             </div>
+            <span className="text-xs shrink-0" style={{ color: textMuted }}>{xp.current} XP</span>
           </div>
-        )}
-      </section>
+
+          {/* Language selection */}
+          <p
+            className="font-bold text-sm mb-3"
+            style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', color: textPrimary }}
+          >
+            {langConfig ? `${langConfig.flag} ${t.home.selectLanguage}` : t.home.selectLanguage}
+          </p>
+          <LanguageGrid selected={nativeLanguage} onSelect={onLanguageSelect} darkMode={darkMode} />
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <button
+              onClick={() => onNavigate('translate')}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm"
+              style={{ background: cardBg, color: '#2e2f2b', borderLeft: `3px solid ${textPrimary}` }}
+            >
+              <span className="material-symbols-outlined text-xl" style={{ color: textPrimary }}>translate</span>
+              {t.home.translate}
+            </button>
+            <button
+              onClick={() => onNavigate('level-test')}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm"
+              style={{ background: cardBg, color: '#2e2f2b', borderLeft: '3px solid #006384' }}
+            >
+              <span className="material-symbols-outlined text-xl" style={{ color: '#006384' }}>quiz</span>
+              {t.home.levelTest}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ── Node helper component ─────────────────────────────────────────────────────
+function NodeItem({
+  top, left, label, done = false, locked = false, onClick,
+}: {
+  top: string; left: string; label: string;
+  done?: boolean; locked?: boolean; onClick: () => void;
+}) {
+  return (
+    <div
+      className="absolute flex flex-col items-center cursor-pointer"
+      style={{ top, left, transform: 'translateX(-50%)', opacity: locked ? 0.6 : 1 }}
+      onClick={onClick}
+    >
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg border-4 border-white"
+        style={{ background: done ? '#abf4ac' : '#eae8e2' }}
+      >
+        {done
+          ? <span className="material-symbols-outlined" style={{ color: '#246830', fontSize: 28, fontVariationSettings: '"FILL" 1' }}>check_circle</span>
+          : <span className="material-symbols-outlined" style={{ color: '#5c5c57', fontSize: 26 }}>lock</span>
+        }
+      </motion.div>
+      <span
+        className="mt-2 px-3 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap"
+        style={{ background: 'rgba(255,255,255,0.88)' }}
+      >
+        {label}
+      </span>
     </div>
   );
 }
