@@ -55,7 +55,7 @@ export default function ProgressView({ nativeLanguage, level, darkMode }: Progre
   );
 
   return (
-    <div className="p-4 pb-20">
+    <div className="p-4 md:p-6 pb-20 md:pb-8">
       <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: 'Jua, sans-serif', color: '#FF6B6B' }}>
         학습 기록
       </h2>

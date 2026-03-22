@@ -54,17 +54,39 @@ export default function Navigation({
           </span>
         </button>
 
-        <div className="flex items-center gap-3">
+        {/* PC/태블릿 가로 네비게이션 */}
+        <nav className="hidden md:flex items-center gap-1">
+          {NAV_ITEMS.map(item => {
+            const isActive = screen === item.screen;
+            return (
+              <button
+                key={item.screen}
+                onClick={() => onNavigate(item.screen)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+                style={{
+                  background: isActive ? '#FFF0EE' : 'transparent',
+                  color: isActive ? '#FF6B6B' : darkMode ? '#9CA3AF' : '#6B7280',
+                  fontFamily: 'Noto Sans KR, sans-serif',
+                }}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="flex items-center gap-2 md:gap-3">
           {/* 언어 배지 */}
           {langConfig && (
-            <span className="text-sm px-2 py-1 rounded-full bg-gray-100">
+            <span className="text-sm px-2 py-1 rounded-full bg-gray-100 hidden sm:inline-flex">
               {langConfig.flag} {langConfig.name}
             </span>
           )}
           {/* 레벨 배지 */}
           {levelConfig && (
             <span
-              className={`text-sm px-2 py-1 rounded-full ${levelConfig.bg} ${levelConfig.color}`}
+              className={`text-sm px-2 py-1 rounded-full hidden sm:inline-flex ${levelConfig.bg} ${levelConfig.color}`}
             >
               {levelConfig.emoji} {levelConfig.label}
             </span>
@@ -79,9 +101,9 @@ export default function Navigation({
         </div>
       </header>
 
-      {/* 하단 탭 네비게이션 */}
+      {/* 하단 탭 네비게이션 (모바일 전용) */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around py-2 border-t"
+        className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around py-2 border-t"
         style={{
           background: darkMode ? '#1a1a2e' : 'white',
           borderColor: darkMode ? '#333' : '#E5E7EB',

@@ -55,7 +55,7 @@ export default function App() {
         onToggleDark={() => setDarkMode((d: boolean) => !d)}
       />
 
-      <main className="pt-2">
+      <main className="pt-2 max-w-3xl mx-auto">
         <AnimatePresence mode="wait">
           {screen === 'home' && (
             <motion.div

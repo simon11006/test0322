@@ -285,15 +285,15 @@ export default function LearningContent({
   };
 
   return (
-    <div className="p-4 pb-20">
+    <div className="p-4 md:p-6 pb-20 md:pb-8">
       {/* 헤더 */}
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-3xl">{levelConfig.emoji}</span>
+        <span className="text-3xl md:text-4xl">{levelConfig.emoji}</span>
         <div>
-          <h2 className="text-2xl font-bold" style={{ fontFamily: 'Jua, sans-serif', color: '#FF6B6B' }}>
+          <h2 className="text-2xl md:text-3xl font-bold" style={{ fontFamily: 'Jua, sans-serif', color: '#FF6B6B' }}>
             {levelConfig.label} 학습
           </h2>
-          <p className="text-sm text-gray-500">{levelConfig.description}</p>
+          <p className="text-sm md:text-base text-gray-500">{levelConfig.description}</p>
         </div>
       </div>
 
@@ -353,7 +353,7 @@ export default function LearningContent({
               exit={{ opacity: 0 }}
             >
               {level === 1 && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {items.map(item => (
                     <WordCard
                       key={item.id}

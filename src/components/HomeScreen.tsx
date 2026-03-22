@@ -37,27 +37,27 @@ export default function HomeScreen({
   const textColor = darkMode ? '#e2e8f0' : '#1f2937';
 
   return (
-    <div className="p-4 pb-20">
+    <div className="p-4 md:p-6 pb-20 md:pb-8">
       {/* 인사 배너 */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl p-5 mb-5 text-white"
+        className="rounded-3xl p-5 md:p-7 mb-5 text-white"
         style={{ background: 'linear-gradient(135deg, #FF6B6B, #FF8E53)' }}
       >
         <div className="flex items-center gap-3">
           <motion.span
             animate={{ rotate: [0, 15, -15, 0] }}
             transition={{ repeat: Infinity, duration: 2 }}
-            className="text-4xl"
+            className="text-4xl md:text-5xl"
           >
             🌟
           </motion.span>
           <div>
-            <h1 className="text-2xl font-bold" style={{ fontFamily: 'Jua, sans-serif' }}>
+            <h1 className="text-2xl md:text-3xl font-bold" style={{ fontFamily: 'Jua, sans-serif' }}>
               안녕하세요!
             </h1>
-            <p className="text-sm opacity-90">오늘도 한국어를 배워봐요!</p>
+            <p className="text-sm md:text-base opacity-90">오늘도 한국어를 배워봐요!</p>
           </div>
         </div>
 
@@ -96,7 +96,7 @@ export default function HomeScreen({
         <h2 className="text-base font-bold mb-3" style={{ fontFamily: 'Jua, sans-serif', color: textColor }}>
           나의 모국어를 선택해요
         </h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           {SUPPORTED_LANGUAGES.map((lang, i) => (
             <motion.button
               key={lang.code}
@@ -134,7 +134,7 @@ export default function HomeScreen({
           <h2 className="text-base font-bold mb-3" style={{ fontFamily: 'Jua, sans-serif', color: textColor }}>
             무엇을 할까요?
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {QUICK_ACTIONS.map((action, i) => (
               <motion.button
                 key={action.screen}

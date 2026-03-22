@@ -73,7 +73,7 @@ export default function LevelTest({ apiKey, onLevelSet, darkMode }: LevelTestPro
 
   if (!started) {
     return (
-      <div className="p-4 pb-20 flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="p-4 md:p-8 pb-20 md:pb-8 flex flex-col items-center justify-center min-h-[60vh]">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -87,7 +87,7 @@ export default function LevelTest({ apiKey, onLevelSet, darkMode }: LevelTestPro
           <p className="text-sm text-gray-400 mb-6">총 8문항 · 약 3분 소요</p>
 
           {/* 레벨 안내 */}
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
             {([1, 2, 3] as Level[]).map(lvl => {
               const cfg = LEVEL_CONFIG[lvl];
               return (
@@ -144,7 +144,7 @@ export default function LevelTest({ apiKey, onLevelSet, darkMode }: LevelTestPro
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="p-4 pb-20 flex flex-col items-center"
+        className="p-4 md:p-8 pb-20 md:pb-8 flex flex-col items-center"
       >
         {/* 폭죽 애니메이션 */}
         <div className="flex gap-2 text-3xl mb-4">
@@ -204,8 +204,8 @@ export default function LevelTest({ apiKey, onLevelSet, darkMode }: LevelTestPro
   if (!question) return null;
 
   return (
-    <div className="p-4 pb-20">
-      <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: 'Jua, sans-serif', color: '#FF6B6B' }}>
+    <div className="p-4 md:p-6 pb-20 md:pb-8">
+      <h2 className="text-2xl md:text-3xl font-bold mb-4" style={{ fontFamily: 'Jua, sans-serif', color: '#FF6B6B' }}>
         한국어 진단 테스트
       </h2>
 
@@ -228,7 +228,7 @@ export default function LevelTest({ apiKey, onLevelSet, darkMode }: LevelTestPro
             {question.question}
           </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {question.options.map(option => {
               const isSelected = selected === option;
               const isCorrect = selected && option === question.answer;

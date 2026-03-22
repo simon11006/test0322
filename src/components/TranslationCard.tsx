@@ -134,8 +134,8 @@ export default function TranslationCardView({ apiKey, nativeLanguage, darkMode }
   const textColor = darkMode ? '#e2e8f0' : '#1f2937';
 
   return (
-    <div className="p-4 pb-20">
-      <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: 'Jua, sans-serif', color: '#FF6B6B' }}>
+    <div className="p-4 md:p-6 pb-20 md:pb-8">
+      <h2 className="text-2xl md:text-3xl font-bold mb-4" style={{ fontFamily: 'Jua, sans-serif', color: '#FF6B6B' }}>
         번역 학습
       </h2>
 
@@ -301,8 +301,8 @@ export default function TranslationCardView({ apiKey, nativeLanguage, darkMode }
           <h3 className="text-lg font-bold mb-3" style={{ fontFamily: 'Jua, sans-serif', color: '#4ECDC4' }}>
             ⭐ 저장한 카드 ({favorites.length})
           </h3>
-          <div className="space-y-2">
-            {favorites.slice(0, 5).map(fav => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {favorites.slice(0, 6).map(fav => (
               <motion.div
                 key={fav.id}
                 whileHover={{ x: 4 }}
