@@ -38,6 +38,7 @@ export interface QuizQuestion {
   options: string[];
   answer: string;
   level: Level;
+  emoji?: string; // 문제에 함께 표시할 시각적 이모지 (그림 역할)
 }
 
 // 퀴즈 결과

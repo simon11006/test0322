@@ -13,14 +13,14 @@ interface LevelTestProps {
 
 // 기본 내장 퀴즈 (API 실패 시 폴백)
 const FALLBACK_QUESTIONS: QuizQuestion[] = [
-  { question: '다음 중 "사과"와 같은 뜻은? 🍎', options: ['Apple', 'Banana', 'Orange', 'Grape'], answer: 'Apple', level: 1 },
-  { question: '"안녕하세요"는 무슨 뜻인가요?', options: ['Thank you', 'Hello', 'Goodbye', 'Sorry'], answer: 'Hello', level: 1 },
-  { question: '"하나, 둘, 셋" 다음에 오는 숫자는?', options: ['다섯', '여섯', '넷', '일곱'], answer: '넷', level: 1 },
-  { question: '"오늘 날씨가 맑아요." 여기서 "맑다"는 무슨 뜻인가요?', options: ['비가 온다', '흐리다', '맑고 화창하다', '춥다'], answer: '맑고 화창하다', level: 2 },
-  { question: '"저는 학교에 갑니다." 에서 "학교"는 어디인가요?', options: ['집', '학교', '병원', '공원'], answer: '학교', level: 2 },
-  { question: '"감사합니다"의 올바른 응답은?', options: ['천만에요', '미안해요', '안녕히 가세요', '잠깐만요'], answer: '천만에요', level: 2 },
-  { question: '"봄, 여름, 가을, ___" 빈칸에 들어갈 계절은?', options: ['겨울', '봄', '여름', '가을'], answer: '겨울', level: 3 },
-  { question: '"나는 오늘 친구와 함께 공원에서 놀았습니다." 누구와 놀았나요?', options: ['혼자', '가족', '친구', '선생님'], answer: '친구', level: 3 },
+  { emoji: '🍎', question: '이것은 무엇인가요?', options: ['사과', '바나나', '오렌지', '포도'], answer: '사과', level: 1 },
+  { emoji: '🐶', question: '이 동물의 이름은 무엇인가요?', options: ['강아지', '고양이', '토끼', '물고기'], answer: '강아지', level: 1 },
+  { emoji: '✏️', question: '학교에서 글씨를 쓸 때 사용하는 것은?', options: ['연필', '가위', '풀', '자'], answer: '연필', level: 1 },
+  { question: '"안녕하세요"는 무슨 뜻인가요?', emoji: '', options: ['감사합니다', '안녕하세요', '잘 가세요', '미안합니다'], answer: '안녕하세요', level: 2 },
+  { question: '"오늘 날씨가 맑아요." 여기서 "맑다"는 무슨 뜻인가요?', emoji: '', options: ['비가 온다', '흐리다', '맑고 화창하다', '춥다'], answer: '맑고 화창하다', level: 2 },
+  { question: '"감사합니다"의 올바른 응답은?', emoji: '', options: ['천만에요', '미안해요', '안녕히 가세요', '잠깐만요'], answer: '천만에요', level: 2 },
+  { question: '"봄, 여름, 가을, ___" 빈칸에 들어갈 계절은?', emoji: '', options: ['겨울', '봄', '여름', '가을'], answer: '겨울', level: 3 },
+  { question: '"나는 오늘 친구와 함께 공원에서 놀았습니다." 누구와 놀았나요?', emoji: '', options: ['혼자', '가족', '친구', '선생님'], answer: '친구', level: 3 },
 ];
 
 export default function LevelTest({ apiKey, onLevelSet, darkMode }: LevelTestProps) {
@@ -224,6 +224,15 @@ export default function LevelTest({ apiKey, onLevelSet, darkMode }: LevelTestPro
           className="mt-6 p-5 rounded-3xl shadow-md"
           style={{ background: cardBg }}
         >
+          {/* 이모지 (그림 역할) */}
+          {question.emoji && (
+            <div
+              className="w-28 h-28 md:w-36 md:h-36 rounded-2xl flex items-center justify-center text-6xl md:text-7xl mx-auto mb-4"
+              style={{ background: '#FFF3E8' }}
+            >
+              {question.emoji}
+            </div>
+          )}
           <p className="text-lg font-medium mb-6" style={{ color: textColor, fontFamily: 'Noto Sans KR, sans-serif' }}>
             {question.question}
           </p>

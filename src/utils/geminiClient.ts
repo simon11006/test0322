@@ -92,16 +92,24 @@ Style: flat design, bright colors, educational, child-friendly, no text in image
 export async function generateDiagnosticQuiz(apiKey: string): Promise<QuizQuestion[]> {
   const prompt = `${SAFETY_PREFIX}초등학생 다문화 학생을 위한 한국어 수준 진단 문제 8개를 만들어주세요.
 난이도는 쉬운 것부터 어려운 순서로 구성하세요.
+
+중요한 규칙:
+- "그림을 보고", "다음 그림", "이 그림" 등의 표현을 절대 사용하지 마세요. 실제 그림을 보여줄 수 없습니다.
+- 레벨 1 문제는 이모지(emoji) 필드에 문제와 관련된 이모지를 1개 넣어서 시각적 힌트를 제공하세요.
+- 레벨 2~3 문제는 emoji 필드를 빈 문자열("")로 두세요.
+- 레벨 1 문제 예시: emoji에 "🍎", question에 "이것은 무엇인가요?" 처럼 이모지로 힌트를 주세요.
+
 JSON 배열 형식으로만 응답하세요 (다른 텍스트 없이):
 [{
   "question": "문제 텍스트",
+  "emoji": "이모지 또는 빈 문자열",
   "options": ["보기1", "보기2", "보기3", "보기4"],
   "answer": "정답",
   "level": 1
 }]
-레벨 1: 기초 단어 (사물 이름, 색깔, 숫자)
-레벨 2: 짧은 문장 (인사, 간단한 표현)
-레벨 3: 문장 이해 (짧은 글 읽기)`;
+레벨 1: 기초 단어 (사물 이름, 색깔, 숫자) - emoji 필드 필수
+레벨 2: 짧은 문장 (인사, 간단한 표현) - emoji 빈 문자열
+레벨 3: 문장 이해 (짧은 글 읽기) - emoji 빈 문자열`;
 
   const raw = await callGemini(apiKey, prompt);
   const json = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
