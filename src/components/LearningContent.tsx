@@ -143,7 +143,7 @@ function ConversationCard({
             </p>
           )}
           {item.example && (
-            <p className="text-xs text-gray-400 mt-1 italic">
+            <p className="text-xs text-gray-400 mt-1 italic" dir={rtl ? 'rtl' : 'ltr'}>
               💡 {item.example}
             </p>
           )}

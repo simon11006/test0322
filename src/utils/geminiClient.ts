@@ -132,8 +132,9 @@ JSON 배열로만 응답하세요:
 [{"id":"1","type":"word","korean":"단어","pronunciation":"발음","nativeTranslation":"번역","category":"${category}"}]`,
     2: `카테고리 "${category}"에 관한 짧은 대화문 4개를 만들어주세요.
 각 대화문은 한국어와 ${langName} 번역을 포함해주세요.
+"example" 필드는 반드시 ${langName}으로 작성하세요 (한국어 사용 금지).
 JSON 배열로만 응답하세요:
-[{"id":"1","type":"conversation","korean":"한국어 대화","nativeTranslation":"번역","example":"사용 상황 설명"}]`,
+[{"id":"1","type":"conversation","korean":"한국어 대화","nativeTranslation":"${langName} 번역","example":"${langName}으로 쓴 사용 상황 설명"}]`,
     3: `주제 "${category}"에 관한 짧은 한국어 글 3개를 만들어주세요.
 각 글은 2~3문장으로 구성하고 ${langName} 번역을 포함해주세요.
 JSON 배열로만 응답하세요:
