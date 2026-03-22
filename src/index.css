@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #FF6B6B;
+  --color-secondary: #4ECDC4;
+  --color-accent: #FFE66D;
+  --color-background: #FFF9F0;
+  --font-jua: 'Jua', sans-serif;
+  --font-noto: 'Noto Sans KR', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #FFF9F0;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+h1, h2, h3, .font-jua {
+  font-family: 'Jua', sans-serif;
+}
+
+/* RTL support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb {
+  background: #FF6B6B;
+  border-radius: 3px;
+}
