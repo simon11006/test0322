@@ -1,5 +1,4 @@
 import type { AppScreen, NativeLanguage } from '../types';
-import { getUIStrings } from '../utils/uiStrings';
 
 interface NavigationProps {
   screen: AppScreen;
@@ -9,122 +8,101 @@ interface NavigationProps {
   onToggleDark: () => void;
 }
 
-export default function Navigation({ screen, onNavigate, nativeLanguage, darkMode, onToggleDark }: NavigationProps) {
-  const t = getUIStrings(nativeLanguage);
+// 메뉴는 한국어로 고정 (학습 목적)
+const NAV_ITEMS: { screen: AppScreen; label: string; icon: string }[] = [
+  { screen: 'home',       label: '지도',   icon: '🗺️' },
+  { screen: 'learning',   label: '학습',   icon: '📚' },
+  { screen: 'level-test', label: '진단',   icon: '📝' },
+  { screen: 'progress',   label: '기록',   icon: '🏆' },
+];
 
-  const navItems: { screen: AppScreen; label: string; icon: string }[] = [
-    { screen: 'home',       label: t.nav.map,     icon: 'map' },
-    { screen: 'learning',   label: t.nav.lessons,  icon: 'auto_stories' },
-    { screen: 'level-test', label: t.nav.quizzes,  icon: 'quiz' },
-    { screen: 'progress',   label: t.nav.rewards,  icon: 'military_tech' },
-  ];
-
-  const navBg = darkMode ? 'rgba(26,27,24,0.88)' : 'rgba(248,246,240,0.88)';
-  const logoBg = darkMode ? '#fdd34d' : '#705900';
+export default function Navigation({ screen, onNavigate, darkMode, onToggleDark }: NavigationProps) {
+  const bg = darkMode ? '#1a1a2e' : 'white';
+  const activeColor = '#FF6B6B';
+  const mutedColor = darkMode ? '#9CA3AF' : '#6B7280';
 
   return (
     <>
-      {/* ── Top App Bar ──────────────────────────────────────────────────── */}
-      <nav
-        className="fixed top-0 w-full z-50 backdrop-blur-md"
-        style={{ background: navBg, boxShadow: '0 1px 0 rgba(92,92,87,0.15)' }}
+      {/* ── 상단 헤더 ── */}
+      <header
+        className="fixed top-0 w-full z-50 shadow-sm"
+        style={{ background: bg, borderBottom: '2px solid #FFE66D' }}
       >
         <div className="flex items-center justify-between px-5 py-3 max-w-7xl mx-auto">
-          {/* Logo */}
+          {/* 로고 */}
           <button
             onClick={() => onNavigate('home')}
-            className="text-xl font-black tracking-tight"
-            style={{ color: logoBg, fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+            className="flex items-center gap-2"
           >
-            Storybook Learning
+            <span className="text-2xl">🌟</span>
+            <span style={{ fontFamily: 'Jua, sans-serif', color: activeColor, fontSize: '1.3rem' }}>
+              한국어 배워요
+            </span>
           </button>
 
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map(item => {
+          {/* 데스크탑 메뉴 */}
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV_ITEMS.map(item => {
               const isActive = screen === item.screen;
               return (
                 <button
                   key={item.screen}
                   onClick={() => onNavigate(item.screen)}
-                  className="px-4 py-2 rounded-xl font-bold text-base transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-bold transition-all"
                   style={{
-                    fontFamily: '"Plus Jakarta Sans", sans-serif',
-                    color: isActive ? logoBg : (darkMode ? '#aeada8' : '#5c5d58'),
-                    background: isActive ? (darkMode ? 'rgba(253,211,77,0.12)' : 'rgba(112,89,0,0.08)') : 'transparent',
+                    fontFamily: 'Jua, sans-serif',
+                    background: isActive ? '#FFF0EE' : 'transparent',
+                    color: isActive ? activeColor : mutedColor,
+                    border: isActive ? `2px solid ${activeColor}` : '2px solid transparent',
                   }}
                 >
-                  {item.label}
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
                 </button>
               );
             })}
-          </div>
+          </nav>
 
-          {/* Right actions */}
+          {/* 오른쪽 버튼 */}
           <div className="flex items-center gap-2">
             <button
               onClick={onToggleDark}
-              className="p-2 rounded-full transition-colors hover:bg-black/10 active:scale-95"
-              style={{ color: logoBg }}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              style={{ fontSize: '1.2rem' }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>
-                {darkMode ? 'light_mode' : 'dark_mode'}
-              </span>
+              {darkMode ? '☀️' : '🌙'}
             </button>
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center border-2 text-lg"
-              style={{ background: '#fdd34d', borderColor: '#705900' }}
-            >
-              🧒
-            </div>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* ── Bottom Nav (Mobile) ───────────────────────────────────────────── */}
+      {/* ── 하단 탭 (모바일) ── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pt-2 pb-5"
+        className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-2 border-t"
         style={{
-          background: darkMode ? 'rgba(26,27,24,0.95)' : 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: '1.5rem 1.5rem 0 0',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+          background: darkMode ? '#1a1a2e' : 'white',
+          borderColor: darkMode ? '#333' : '#FFE66D',
         }}
       >
-        {navItems.map(item => {
+        {NAV_ITEMS.map(item => {
           const isActive = screen === item.screen;
           return (
             <button
               key={item.screen}
               onClick={() => onNavigate(item.screen)}
-              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all"
-              style={{ minWidth: 60 }}
+              className="flex flex-col items-center gap-0.5 px-3 py-1"
             >
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
-                style={{
-                  background: isActive ? 'linear-gradient(135deg, #705900, #fdd34d)' : 'transparent',
-                }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all"
+                style={{ background: isActive ? '#FFF0EE' : 'transparent' }}
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{
-                    fontSize: 22,
-                    color: isActive ? 'white' : (darkMode ? '#aeada8' : '#5c5d58'),
-                    fontVariationSettings: isActive ? '"FILL" 1' : '"FILL" 0',
-                  }}
-                >
-                  {item.icon}
-                </span>
+                {item.icon}
               </div>
               <span
-                className="text-[10px] font-bold leading-tight"
+                className="text-[10px] font-bold"
                 style={{
-                  color: isActive ? logoBg : (darkMode ? '#aeada8' : '#5c5d58'),
-                  fontFamily: '"Plus Jakarta Sans", sans-serif',
-                  maxWidth: 60,
-                  textAlign: 'center',
-                  wordBreak: 'keep-all',
+                  fontFamily: 'Jua, sans-serif',
+                  color: isActive ? activeColor : mutedColor,
                 }}
               >
                 {item.label}
