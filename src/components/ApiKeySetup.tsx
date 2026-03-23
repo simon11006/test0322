@@ -8,6 +8,7 @@ interface ApiKeySetupProps {
 
 export default function ApiKeySetup({ onApiKeySet }: ApiKeySetupProps) {
   const [apiKey, setApiKey] = useState('');
+  const [pixabayKey, setPixabayKey] = useState(() => localStorage.getItem('pixabay_api_key') ?? '');
   const [saveToLocal, setSaveToLocal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,6 +34,10 @@ export default function ApiKeySetup({ onApiKeySet }: ApiKeySetupProps) {
     sessionStorage.setItem('gemini_api_key', keyToUse);
     if (saveToLocal) {
       localStorage.setItem('gemini_api_key', keyToUse);
+    }
+    // Pixabay 키 저장 (입력한 경우)
+    if (pixabayKey.trim()) {
+      localStorage.setItem('pixabay_api_key', pixabayKey.trim());
     }
     onApiKeySet(keyToUse);
   };
@@ -123,6 +128,33 @@ export default function ApiKeySetup({ onApiKeySet }: ApiKeySetupProps) {
               ⚠️ {error}
             </motion.p>
           )}
+        </div>
+
+        {/* Pixabay API 키 (선택) */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Pixabay API 키 <span className="text-gray-400 font-normal">(선택 · 무료)</span>
+          </label>
+          <p className="text-xs text-gray-400 mb-2">
+            이모지가 없는 단어에 실제 그림을 보여줘요.{' '}
+            <a
+              href="https://pixabay.com/api/docs/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+              style={{ color: '#4ECDC4' }}
+            >
+              무료 발급 →
+            </a>
+          </p>
+          <input
+            type="password"
+            value={pixabayKey}
+            onChange={e => setPixabayKey(e.target.value)}
+            placeholder="Pixabay API 키 (없으면 이모지로 대체)"
+            className="w-full px-4 py-3 rounded-xl border-2 outline-none text-sm transition-all"
+            style={{ borderColor: '#E5E7EB', fontFamily: 'monospace' }}
+          />
         </div>
 
         {/* 저장 옵션 */}
