@@ -10,6 +10,8 @@ interface NavigationProps {
   level?: Level;
   darkMode: boolean;
   onToggleDark: () => void;
+  studentName?: string;
+  onLogout?: () => void;
 }
 
 const NAV_ITEMS: { screen: AppScreen; label: string; icon: string }[] = [
@@ -27,6 +29,8 @@ export default function Navigation({
   level,
   darkMode,
   onToggleDark,
+  studentName,
+  onLogout,
 }: NavigationProps) {
   const langConfig = nativeLanguage ? getLanguageConfig(nativeLanguage) : null;
   const levelConfig = level ? LEVEL_CONFIG[level] : null;
@@ -91,6 +95,12 @@ export default function Navigation({
               {levelConfig.emoji} {levelConfig.label}
             </span>
           )}
+          {/* 학생 이름 */}
+          {studentName && (
+            <span className="text-sm font-semibold hidden sm:inline-flex" style={{ color: darkMode ? '#e2e8f0' : '#1f2937' }}>
+              {studentName}
+            </span>
+          )}
           {/* 다크모드 토글 */}
           <button
             onClick={onToggleDark}
@@ -98,6 +108,21 @@ export default function Navigation({
           >
             {darkMode ? '☀️' : '🌙'}
           </button>
+          {/* 로그아웃 */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="text-sm px-3 py-1 rounded-lg border transition-colors"
+              style={{
+                borderColor: darkMode ? '#4b5563' : '#e5e7eb',
+                color: darkMode ? '#9ca3af' : '#6b7280',
+                background: 'transparent',
+                cursor: 'pointer',
+              }}
+            >
+              나가기
+            </button>
+          )}
         </div>
       </header>
 

@@ -1,5 +1,29 @@
-// 앱 화면 상태
-export type AppScreen = 'api-key' | 'home' | 'translate' | 'level-test' | 'learning' | 'progress';
+// 앱 화면 상태 (학생용)
+export type AppScreen = 'home' | 'translate' | 'level-test' | 'learning' | 'progress';
+
+// 교사 계정
+export interface Teacher {
+  uid: string;
+  name: string;
+  email: string;
+  geminiApiKey: string;
+  pixabayApiKey: string;
+  classCode: string;
+}
+
+// 학생 계정
+export interface Student {
+  id: string;
+  name: string;
+  teacherId: string;
+  nativeLanguage: NativeLanguage;
+  level?: Level;
+  pin: string;
+  lastActivity?: number;
+  wordsLearned?: number;
+  quizzesTaken?: number;
+  createdAt: number;
+}
 
 // 학습 레벨
 export type Level = 1 | 2 | 3;

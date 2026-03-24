@@ -1,42 +1,223 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { AppScreen, Level, NativeLanguage } from './types';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './lib/firebase';
+import { getTeacher, getStudentById, updateStudentProgress } from './lib/firestore';
+import type { AppScreen, Level, NativeLanguage, Teacher, Student } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import ApiKeySetup from './components/ApiKeySetup';
 import Navigation from './components/Navigation';
 import HomeScreen from './components/HomeScreen';
 import TranslationCardView from './components/TranslationCard';
 import LevelTest from './components/LevelTest';
 import LearningContent from './components/LearningContent';
 import ProgressView from './components/ProgressView';
+import LoginScreen from './components/auth/LoginScreen';
+import TeacherAuth from './components/auth/TeacherAuth';
+import StudentAuth from './components/auth/StudentAuth';
+import TeacherDashboard from './components/teacher/TeacherDashboard';
 
+// ─── 인증 상태 ────────────────────────────────────────────────────────────────
+type AuthState =
+  | { mode: 'loading' }
+  | { mode: 'login' }
+  | { mode: 'teacher-auth' }
+  | { mode: 'student-auth' }
+  | { mode: 'teacher'; teacher: Teacher }
+  | { mode: 'student'; student: Student; teacher: Teacher };
+
+// ─── 루트 앱 ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [apiKey, setApiKey] = useState<string>(() => {
-    return sessionStorage.getItem('gemini_api_key') ?? '';
-  });
-  const [screen, setScreen] = useState<AppScreen>('home');
-  const [nativeLanguage, setNativeLanguage] = useLocalStorage<NativeLanguage | undefined>('native_language', undefined);
-  const [level, setLevel] = useLocalStorage<Level | undefined>('user_level', undefined);
-  const [darkMode, setDarkMode] = useLocalStorage<boolean>('dark_mode', false);
+  const [authState, setAuthState] = useState<AuthState>({ mode: 'loading' });
 
-  // API 키가 없으면 설정 화면
-  if (!apiKey) {
-    return <ApiKeySetup onApiKeySet={setApiKey} />;
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async firebaseUser => {
+      if (firebaseUser) {
+        // 교사 로그인 확인
+        try {
+          const teacher = await getTeacher(firebaseUser.uid);
+          if (teacher) {
+            setAuthState({ mode: 'teacher', teacher });
+            return;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      // 학생 세션 확인
+      const session = sessionStorage.getItem('student_session');
+      if (session) {
+        try {
+          const { studentId } = JSON.parse(session);
+          const student = await getStudentById(studentId);
+          if (student) {
+            const teacher = await getTeacher(student.teacherId);
+            if (teacher) {
+              setAuthState({ mode: 'student', student, teacher });
+              return;
+            }
+          }
+        } catch {
+          sessionStorage.removeItem('student_session');
+        }
+      }
+      setAuthState({ mode: 'login' });
+    });
+    return () => unsub();
+  }, []);
+
+  if (authState.mode === 'loading') return <LoadingScreen />;
+
+  if (authState.mode === 'login') {
+    return (
+      <LoginScreen
+        onTeacher={() => setAuthState({ mode: 'teacher-auth' })}
+        onStudent={() => setAuthState({ mode: 'student-auth' })}
+      />
+    );
   }
 
-  const handleLevelSet = (newLevel: Level) => {
-    setLevel(newLevel);
-    setScreen('learning');
-  };
+  if (authState.mode === 'teacher-auth') {
+    return (
+      <TeacherAuth
+        onSuccess={teacher => setAuthState({ mode: 'teacher', teacher })}
+        onBack={() => setAuthState({ mode: 'login' })}
+      />
+    );
+  }
+
+  if (authState.mode === 'student-auth') {
+    return (
+      <StudentAuth
+        onSuccess={(student, teacher) => {
+          sessionStorage.setItem('student_session', JSON.stringify({ studentId: student.id }));
+          // 마지막 접속 시간 업데이트
+          updateStudentProgress(student.id, { lastActivity: Date.now() }).catch(() => {});
+          setAuthState({ mode: 'student', student, teacher });
+        }}
+        onBack={() => setAuthState({ mode: 'login' })}
+      />
+    );
+  }
+
+  if (authState.mode === 'teacher') {
+    return (
+      <TeacherDashboard
+        teacher={authState.teacher}
+        onTeacherUpdate={teacher => setAuthState({ mode: 'teacher', teacher })}
+        onLogout={() => setAuthState({ mode: 'login' })}
+      />
+    );
+  }
+
+  if (authState.mode === 'student') {
+    return (
+      <StudentApp
+        student={authState.student}
+        teacher={authState.teacher}
+        onLogout={() => {
+          sessionStorage.removeItem('student_session');
+          setAuthState({ mode: 'login' });
+        }}
+      />
+    );
+  }
+
+  return null;
+}
+
+// ─── 학생용 앱 ────────────────────────────────────────────────────────────────
+function StudentApp({
+  student,
+  teacher,
+  onLogout,
+}: {
+  student: Student;
+  teacher: Teacher;
+  onLogout: () => void;
+}) {
+  const apiKey = teacher.geminiApiKey;
+
+  // Pixabay 키를 localStorage에 동기화
+  useEffect(() => {
+    if (teacher.pixabayApiKey) {
+      localStorage.setItem('pixabay_api_key', teacher.pixabayApiKey);
+    }
+  }, [teacher.pixabayApiKey]);
+
+  const [screen, setScreen] = useState<AppScreen>('home');
+  // 학생의 저장된 레벨/언어 우선 사용, 없으면 localStorage
+  const [nativeLanguage, setNativeLanguage] = useLocalStorage<NativeLanguage | undefined>(
+    `native_language_${student.id}`,
+    student.nativeLanguage,
+  );
+  const [level, setLevel] = useLocalStorage<Level | undefined>(
+    `user_level_${student.id}`,
+    student.level,
+  );
+  const [darkMode, setDarkMode] = useLocalStorage<boolean>('dark_mode', false);
+
+  const handleLevelSet = useCallback(
+    (newLevel: Level) => {
+      setLevel(newLevel);
+      setScreen('learning');
+      // Firestore에 레벨 저장
+      updateStudentProgress(student.id, { level: newLevel }).catch(() => {});
+    },
+    [student.id, setLevel],
+  );
 
   const handleNavigate = (target: AppScreen) => {
-    // 레벨 미설정 시 학습 화면 접근 제한
     if (target === 'learning' && !level) {
       setScreen('level-test');
       return;
     }
     setScreen(target);
   };
+
+  // API 키 미설정 안내
+  if (!apiKey) {
+    return (
+      <div
+        style={{
+          minHeight: '100dvh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          background: '#f8fafc',
+          fontFamily: 'Noto Sans KR, sans-serif',
+        }}
+      >
+        <div style={{ textAlign: 'center', maxWidth: '360px' }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>⚠️</div>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937', marginBottom: '8px' }}>
+            앱 준비 중
+          </h2>
+          <p style={{ color: '#6b7280', fontSize: '15px', lineHeight: 1.6 }}>
+            선생님이 아직 API 키를 설정하지 않았습니다.
+            <br />
+            선생님께 설정을 요청해 주세요.
+          </p>
+          <button
+            onClick={onLogout}
+            style={{
+              marginTop: '20px',
+              padding: '12px 24px',
+              borderRadius: '12px',
+              border: 'none',
+              background: '#667eea',
+              color: 'white',
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontSize: '15px',
+            }}
+          >
+            로그아웃
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const bgColor = darkMode ? '#0f172a' : '#FFF9F0';
   const textColor = darkMode ? '#e2e8f0' : '#1f2937';
@@ -53,6 +234,8 @@ export default function App() {
         level={level}
         darkMode={darkMode}
         onToggleDark={() => setDarkMode((d: boolean) => !d)}
+        studentName={student.name}
+        onLogout={onLogout}
       />
 
       <main className="pt-2 max-w-3xl mx-auto">
@@ -68,9 +251,7 @@ export default function App() {
                 nativeLanguage={nativeLanguage}
                 level={level}
                 onNavigate={handleNavigate}
-                onLanguageSelect={(lang: NativeLanguage) => {
-                  setNativeLanguage(lang);
-                }}
+                onLanguageSelect={(lang: NativeLanguage) => setNativeLanguage(lang)}
                 darkMode={darkMode}
               />
             </motion.div>
@@ -84,22 +265,9 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
             >
               {nativeLanguage ? (
-                <TranslationCardView
-                  apiKey={apiKey}
-                  nativeLanguage={nativeLanguage}
-                  darkMode={darkMode}
-                />
+                <TranslationCardView apiKey={apiKey} nativeLanguage={nativeLanguage} darkMode={darkMode} />
               ) : (
-                <div className="p-4 text-center py-12">
-                  <p className="text-gray-400 mb-3">먼저 홈에서 모국어를 선택해주세요!</p>
-                  <button
-                    onClick={() => setScreen('home')}
-                    className="px-4 py-2 rounded-xl text-white"
-                    style={{ background: '#FF6B6B' }}
-                  >
-                    홈으로 가기
-                  </button>
-                </div>
+                <NeedLanguage onHome={() => setScreen('home')} />
               )}
             </motion.div>
           )}
@@ -111,11 +279,7 @@ export default function App() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
             >
-              <LevelTest
-                apiKey={apiKey}
-                onLevelSet={handleLevelSet}
-                darkMode={darkMode}
-              />
+              <LevelTest apiKey={apiKey} onLevelSet={handleLevelSet} darkMode={darkMode} />
             </motion.div>
           )}
 
@@ -170,6 +334,47 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+    </div>
+  );
+}
+
+// ─── 보조 컴포넌트 ────────────────────────────────────────────────────────────
+function LoadingScreen() {
+  return (
+    <div
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        flexDirection: 'column',
+        gap: '16px',
+      }}
+    >
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+        style={{ fontSize: '40px' }}
+      >
+        🌏
+      </motion.div>
+      <p style={{ color: 'white', fontSize: '16px', fontFamily: 'Jua, sans-serif' }}>로딩 중...</p>
+    </div>
+  );
+}
+
+function NeedLanguage({ onHome }: { onHome: () => void }) {
+  return (
+    <div className="p-4 text-center py-12">
+      <p className="text-gray-400 mb-3">먼저 홈에서 모국어를 선택해주세요!</p>
+      <button
+        onClick={onHome}
+        className="px-4 py-2 rounded-xl text-white"
+        style={{ background: '#FF6B6B' }}
+      >
+        홈으로 가기
+      </button>
     </div>
   );
 }
