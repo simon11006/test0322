@@ -90,7 +90,6 @@ export default function App() {
       <LoginScreen
         onTeacher={() => setAuthState({ mode: 'teacher-auth' })}
         onStudent={() => setAuthState({ mode: 'student-auth' })}
-        onAdmin={() => setAuthState({ mode: 'admin-auth' })}
       />
     );
   }
@@ -119,6 +118,7 @@ export default function App() {
       <TeacherAuth
         onSuccess={teacher => setAuthState({ mode: 'teacher', teacher })}
         onBack={() => setAuthState({ mode: 'login' })}
+        onAdmin={() => setAuthState({ mode: 'admin-auth' })}
       />
     );
   }

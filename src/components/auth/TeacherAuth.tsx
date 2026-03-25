@@ -12,12 +12,19 @@ import type { Teacher } from '../../types';
 interface TeacherAuthProps {
   onSuccess: (teacher: Teacher) => void;
   onBack: () => void;
+  onAdmin: () => void;
 }
 
-export default function TeacherAuth({ onSuccess, onBack }: TeacherAuthProps) {
+// 아이디를 Firebase Auth용 이메일로 변환
+// 이미 이메일 형식이면 그대로, 아니면 @korean-app.local 추가
+function toFirebaseEmail(id: string): string {
+  return id.includes('@') ? id : `${id}@korean-app.local`;
+}
+
+export default function TeacherAuth({ onSuccess, onBack, onAdmin }: TeacherAuthProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,11 +33,12 @@ export default function TeacherAuth({ onSuccess, onBack }: TeacherAuthProps) {
     e.preventDefault();
     setError('');
     setLoading(true);
+    const email = toFirebaseEmail(userId.trim());
     try {
       if (mode === 'register') {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(cred.user, { displayName: name });
-        const teacher = await createTeacher(cred.user.uid, name, email);
+        const teacher = await createTeacher(cred.user.uid, name, userId.trim());
         onSuccess(teacher);
       } else {
         const cred = await signInWithEmailAndPassword(auth, email, password);
@@ -44,9 +52,9 @@ export default function TeacherAuth({ onSuccess, onBack }: TeacherAuthProps) {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('email-already-in-use')) setError('이미 사용 중인 이메일입니다.');
+      if (msg.includes('email-already-in-use')) setError('이미 사용 중인 아이디입니다.');
       else if (msg.includes('wrong-password') || msg.includes('invalid-credential'))
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        setError('아이디 또는 비밀번호가 올바르지 않습니다.');
       else if (msg.includes('user-not-found')) setError('등록된 계정을 찾을 수 없습니다.');
       else if (msg.includes('weak-password')) setError('비밀번호는 6자 이상이어야 합니다.');
       else setError('오류가 발생했습니다. 다시 시도해 주세요.');
@@ -131,13 +139,13 @@ export default function TeacherAuth({ onSuccess, onBack }: TeacherAuthProps) {
 
           <div>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-              이메일
+              아이디
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="teacher@school.edu"
+              type="text"
+              value={userId}
+              onChange={e => setUserId(e.target.value)}
+              placeholder="아이디 입력"
               required
               style={inputStyle}
             />
@@ -207,6 +215,22 @@ export default function TeacherAuth({ onSuccess, onBack }: TeacherAuthProps) {
             }}
           >
             {mode === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'}
+          </button>
+        </div>
+
+        {/* 관리자 로그인 */}
+        <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f3f4f6' }}>
+          <button
+            onClick={onAdmin}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#d1d5db',
+              fontSize: '12px',
+            }}
+          >
+            🔐 관리자 로그인
           </button>
         </div>
       </motion.div>

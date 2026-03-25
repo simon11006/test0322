@@ -3,10 +3,9 @@ import { motion } from 'framer-motion';
 interface LoginScreenProps {
   onTeacher: () => void;
   onStudent: () => void;
-  onAdmin: () => void;
 }
 
-export default function LoginScreen({ onTeacher, onStudent, onAdmin }: LoginScreenProps) {
+export default function LoginScreen({ onTeacher, onStudent }: LoginScreenProps) {
   return (
     <div
       style={{
@@ -115,29 +114,14 @@ export default function LoginScreen({ onTeacher, onStudent, onAdmin }: LoginScre
         </motion.button>
       </motion.div>
 
-      <motion.div
+      <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.0 }}
-        style={{ marginTop: '40px', textAlign: 'center' }}
+        transition={{ delay: 0.8 }}
+        style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginTop: '40px' }}
       >
-        <button
-          onClick={onAdmin}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(255,255,255,0.2)',
-            fontSize: '12px',
-            cursor: 'pointer',
-            padding: '8px 16px',
-          }}
-        >
-          🔐 관리자
-        </button>
-        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '4px' }}>
-          © 2025 한국어 배움터
-        </p>
-      </motion.div>
+        © 2025 한국어 배움터
+      </motion.p>
     </div>
   );
 }
