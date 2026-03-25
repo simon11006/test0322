@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
 import { auth } from '../../lib/firebase';
 
-// 관리자 Firebase Auth 이메일 (고정)
-export const ADMIN_EMAIL = 'admin@korean-app.local';
+export const ADMIN_EMAIL = 'admin@korean-app.example';
 
-// Firebase Auth는 6자 이상 필요 → 짧은 비밀번호는 내부적으로 패딩
+// Firebase Auth 최소 6자 요건 충족
 export function padAdminPassword(pw: string): string {
   return pw.padEnd(6, '_');
 }
@@ -22,40 +22,77 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const isSubmitting = useRef(false); // 이중 제출 방지
 
   const handleLogin = async () => {
+    if (isSubmitting.current) return;
     if (!password.trim()) {
       setError('비밀번호를 입력해주세요.');
       return;
     }
+
+    isSubmitting.current = true;
     setLoading(true);
     setError('');
+
     const firebasePw = padAdminPassword(password);
+
     try {
       await signInWithEmailAndPassword(auth, ADMIN_EMAIL, firebasePw);
-      // 성공 → App.tsx의 onAuthStateChanged가 admin 대시보드로 라우팅
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('user-not-found') || msg.includes('invalid-credential') || msg.includes('CONFIGURATION_NOT_FOUND')) {
-        // 최초 접근 시 계정 자동 생성 (초기 비밀번호 "1234")
+      // 성공 → App.tsx onAuthStateChanged가 라우팅 처리
+    } catch (err) {
+      if (!(err instanceof FirebaseError)) {
+        setError('오류가 발생했습니다. 다시 시도해 주세요.');
+        isSubmitting.current = false;
+        setLoading(false);
+        return;
+      }
+
+      // 계정 없음 / 잘못된 자격증명 → 최초 로그인 시 계정 자동 생성
+      const isFirstTime =
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/invalid-credential';
+
+      if (isFirstTime) {
         try {
           await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, firebasePw);
           // 성공 → onAuthStateChanged가 처리
-        } catch (createErr: unknown) {
-          const createMsg = createErr instanceof Error ? createErr.message : '';
-          if (createMsg.includes('email-already-in-use')) {
+        } catch (createErr) {
+          if (
+            createErr instanceof FirebaseError &&
+            createErr.code === 'auth/email-already-in-use'
+          ) {
+            // 계정은 있는데 비밀번호가 틀린 경우
             setError('비밀번호가 올바르지 않습니다.');
+          } else if (
+            createErr instanceof FirebaseError &&
+            createErr.code === 'auth/operation-not-allowed'
+          ) {
+            setError(
+              'Firebase 콘솔에서 이메일/비밀번호 로그인을 활성화해 주세요.'
+            );
           } else {
             setError('오류가 발생했습니다. 다시 시도해 주세요.');
           }
+          isSubmitting.current = false;
+          setLoading(false);
         }
-      } else if (msg.includes('wrong-password') || msg.includes('invalid-login-credentials')) {
+      } else if (
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/invalid-login-credentials'
+      ) {
         setError('비밀번호가 올바르지 않습니다.');
+        isSubmitting.current = false;
+        setLoading(false);
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('시도 횟수가 너무 많습니다. 잠시 후 다시 시도해 주세요.');
+        isSubmitting.current = false;
+        setLoading(false);
       } else {
-        setError('오류가 발생했습니다. 다시 시도해 주세요.');
+        setError('오류가 발생했습니다. (' + err.code + ')');
+        isSubmitting.current = false;
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -87,16 +124,38 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
       >
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ fontSize: '56px', marginBottom: '12px' }}>🔐</div>
-          <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'white', margin: 0, fontFamily: 'Jua, sans-serif' }}>
+          <h2
+            style={{
+              fontSize: '24px',
+              fontWeight: 700,
+              color: 'white',
+              margin: 0,
+              fontFamily: 'Jua, sans-serif',
+            }}
+          >
             관리자 로그인
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '8px' }}>
+          <p
+            style={{
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: '14px',
+              marginTop: '8px',
+            }}
+          >
             시스템 관리자 전용
           </p>
         </div>
 
         <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginBottom: '8px', fontWeight: 600 }}>
+          <label
+            style={{
+              display: 'block',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: 600,
+            }}
+          >
             아이디
           </label>
           <div
@@ -114,21 +173,31 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
         </div>
 
         <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginBottom: '8px', fontWeight: 600 }}>
+          <label
+            style={{
+              display: 'block',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: 600,
+            }}
+          >
             비밀번호
           </label>
           <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            onKeyDown={e => e.key === 'Enter' && !loading && handleLogin()}
             placeholder="비밀번호 입력"
             style={{
               width: '100%',
               padding: '14px 16px',
               borderRadius: '12px',
               background: 'rgba(255,255,255,0.07)',
-              border: error ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.15)',
+              border: error
+                ? '1px solid #ef4444'
+                : '1px solid rgba(255,255,255,0.15)',
               color: 'white',
               fontSize: '15px',
               outline: 'none',
@@ -136,13 +205,15 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
             }}
           />
           {error && (
-            <p style={{ color: '#ef4444', fontSize: '13px', marginTop: '6px' }}>{error}</p>
+            <p style={{ color: '#ef4444', fontSize: '13px', marginTop: '6px' }}>
+              {error}
+            </p>
           )}
         </div>
 
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: loading ? 1 : 1.02 }}
+          whileTap={{ scale: loading ? 1 : 0.98 }}
           onClick={handleLogin}
           disabled={loading}
           style={{
@@ -150,7 +221,9 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
             padding: '16px',
             borderRadius: '14px',
             border: 'none',
-            background: loading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #667eea, #764ba2)',
+            background: loading
+              ? 'rgba(255,255,255,0.1)'
+              : 'linear-gradient(135deg, #667eea, #764ba2)',
             color: 'white',
             fontSize: '16px',
             fontWeight: 700,
@@ -164,6 +237,7 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
         <button
           type="button"
           onClick={onBack}
+          disabled={loading}
           style={{
             width: '100%',
             padding: '12px',
@@ -172,7 +246,7 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
             background: 'transparent',
             color: 'rgba(255,255,255,0.4)',
             fontSize: '14px',
-            cursor: 'pointer',
+            cursor: loading ? 'not-allowed' : 'pointer',
           }}
         >
           ← 뒤로
