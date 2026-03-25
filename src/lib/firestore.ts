@@ -11,7 +11,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Teacher, Student, NativeLanguage, Level } from '../types';
+import type { Teacher, Student, NativeLanguage } from '../types';
 
 // ─── 학급 코드 생성 ───────────────────────────────────────────────────────────
 function generateClassCode(): string {
