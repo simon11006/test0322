@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { updateAdminApiKeys, updateAdminPassword, loginAdmin } from '../../lib/firestore';
+import { testGeminiKey, testPixabayKey, type TestStatus } from '../../lib/apiTest';
 import type { AdminConfig } from '../../types';
 
 interface AdminDashboardProps {
@@ -118,6 +119,24 @@ function ApiKeysTab({
   const [showPixabay, setShowPixabay] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [geminiTest, setGeminiTest] = useState<TestStatus>('idle');
+  const [geminiMsg, setGeminiMsg] = useState('');
+  const [pixabayTest, setPixabayTest] = useState<TestStatus>('idle');
+  const [pixabayMsg, setPixabayMsg] = useState('');
+
+  const handleTestGemini = async () => {
+    setGeminiTest('testing');
+    const result = await testGeminiKey(geminiKey);
+    setGeminiTest(result.ok ? 'ok' : 'fail');
+    setGeminiMsg(result.message);
+  };
+
+  const handleTestPixabay = async () => {
+    setPixabayTest('testing');
+    const result = await testPixabayKey(pixabayKey);
+    setPixabayTest(result.ok ? 'ok' : 'fail');
+    setPixabayMsg(result.message);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -196,6 +215,31 @@ function ApiKeysTab({
             {showGemini ? '🙈' : '👁️'}
           </button>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+          <button
+            type="button"
+            onClick={handleTestGemini}
+            disabled={geminiTest === 'testing'}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '8px',
+              border: '1px solid rgba(102,126,234,0.6)',
+              background: 'transparent',
+              color: '#a5b4fc',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: geminiTest === 'testing' ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {geminiTest === 'testing' ? '테스트 중...' : '🔍 키 테스트'}
+          </button>
+          {geminiTest !== 'idle' && geminiTest !== 'testing' && (
+            <span style={{ fontSize: '12px', color: geminiTest === 'ok' ? '#34d399' : '#f87171', fontWeight: 600 }}>
+              {geminiTest === 'ok' ? '✅' : '❌'} {geminiMsg}
+            </span>
+          )}
+        </div>
         {!geminiKey && (
           <p style={{ color: '#f59e0b', fontSize: '12px', marginTop: '6px' }}>
             ⚠️ 키가 없으면 교사가 자신의 키를 설정하지 않은 경우 학생이 앱을 사용할 수 없습니다.
@@ -247,6 +291,31 @@ function ApiKeysTab({
           >
             {showPixabay ? '🙈' : '👁️'}
           </button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+          <button
+            type="button"
+            onClick={handleTestPixabay}
+            disabled={pixabayTest === 'testing'}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '8px',
+              border: '1px solid rgba(102,126,234,0.6)',
+              background: 'transparent',
+              color: '#a5b4fc',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: pixabayTest === 'testing' ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {pixabayTest === 'testing' ? '테스트 중...' : '🔍 키 테스트'}
+          </button>
+          {pixabayTest !== 'idle' && pixabayTest !== 'testing' && (
+            <span style={{ fontSize: '12px', color: pixabayTest === 'ok' ? '#34d399' : '#f87171', fontWeight: 600 }}>
+              {pixabayTest === 'ok' ? '✅' : '❌'} {pixabayMsg}
+            </span>
+          )}
         </div>
       </div>
 
