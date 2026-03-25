@@ -1,28 +1,18 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-} from 'firebase/auth';
-import { FirebaseError } from 'firebase/app';
-import { auth } from '../../lib/firebase';
-
-export const ADMIN_EMAIL = 'admin@korean-app.example';
-
-// Firebase Auth 최소 6자 요건 충족
-export function padAdminPassword(pw: string): string {
-  return pw.padEnd(6, '_');
-}
+import { loginAdmin } from '../../lib/firestore';
+import type { AdminConfig } from '../../types';
 
 interface AdminAuthProps {
+  onSuccess: (config: AdminConfig) => void;
   onBack: () => void;
 }
 
-export default function AdminAuth({ onBack }: AdminAuthProps) {
+export default function AdminAuth({ onSuccess, onBack }: AdminAuthProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const isSubmitting = useRef(false); // 이중 제출 방지
+  const isSubmitting = useRef(false);
 
   const handleLogin = async () => {
     if (isSubmitting.current) return;
@@ -35,64 +25,19 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
     setLoading(true);
     setError('');
 
-    const firebasePw = padAdminPassword(password);
-
     try {
-      await signInWithEmailAndPassword(auth, ADMIN_EMAIL, firebasePw);
-      // 성공 → App.tsx onAuthStateChanged가 라우팅 처리
-    } catch (err) {
-      if (!(err instanceof FirebaseError)) {
-        setError('오류가 발생했습니다. 다시 시도해 주세요.');
-        isSubmitting.current = false;
-        setLoading(false);
+      const config = await loginAdmin(password);
+      if (!config) {
+        setError('비밀번호가 올바르지 않습니다.');
         return;
       }
-
-      // 계정 없음 / 잘못된 자격증명 → 최초 로그인 시 계정 자동 생성
-      const isFirstTime =
-        err.code === 'auth/user-not-found' ||
-        err.code === 'auth/invalid-credential';
-
-      if (isFirstTime) {
-        try {
-          await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, firebasePw);
-          // 성공 → onAuthStateChanged가 처리
-        } catch (createErr) {
-          if (
-            createErr instanceof FirebaseError &&
-            createErr.code === 'auth/email-already-in-use'
-          ) {
-            // 계정은 있는데 비밀번호가 틀린 경우
-            setError('비밀번호가 올바르지 않습니다.');
-          } else if (
-            createErr instanceof FirebaseError &&
-            createErr.code === 'auth/operation-not-allowed'
-          ) {
-            setError(
-              'Firebase 콘솔에서 이메일/비밀번호 로그인을 활성화해 주세요.'
-            );
-          } else {
-            setError('오류가 발생했습니다. 다시 시도해 주세요.');
-          }
-          isSubmitting.current = false;
-          setLoading(false);
-        }
-      } else if (
-        err.code === 'auth/wrong-password' ||
-        err.code === 'auth/invalid-login-credentials'
-      ) {
-        setError('비밀번호가 올바르지 않습니다.');
-        isSubmitting.current = false;
-        setLoading(false);
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('시도 횟수가 너무 많습니다. 잠시 후 다시 시도해 주세요.');
-        isSubmitting.current = false;
-        setLoading(false);
-      } else {
-        setError('오류가 발생했습니다. (' + err.code + ')');
-        isSubmitting.current = false;
-        setLoading(false);
-      }
+      localStorage.setItem('admin_session', 'true');
+      onSuccess(config);
+    } catch {
+      setError('오류가 발생했습니다. 다시 시도해 주세요.');
+    } finally {
+      setLoading(false);
+      isSubmitting.current = false;
     }
   };
 
@@ -135,13 +80,7 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
           >
             관리자 로그인
           </h2>
-          <p
-            style={{
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: '14px',
-              marginTop: '8px',
-            }}
-          >
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '8px' }}>
             시스템 관리자 전용
           </p>
         </div>
@@ -205,9 +144,7 @@ export default function AdminAuth({ onBack }: AdminAuthProps) {
             }}
           />
           {error && (
-            <p style={{ color: '#ef4444', fontSize: '13px', marginTop: '6px' }}>
-              {error}
-            </p>
+            <p style={{ color: '#ef4444', fontSize: '13px', marginTop: '6px' }}>{error}</p>
           )}
         </div>
 

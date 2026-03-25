@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
 import {
   getStudents,
   addStudent,
@@ -39,15 +37,14 @@ export default function TeacherDashboard({ teacher, onTeacherUpdate, onLogout }:
   const fetchStudents = async () => {
     setLoadingStudents(true);
     try {
-      const list = await getStudents(teacher.uid);
+      const list = await getStudents(teacher.id);
       setStudents(list.sort((a, b) => a.name.localeCompare(b.name)));
     } finally {
       setLoadingStudents(false);
     }
   };
 
-  const handleLogout = async () => {
-    await signOut(auth);
+  const handleLogout = () => {
     onLogout();
   };
 
@@ -202,7 +199,7 @@ function StudentsTab({
     setSubmitting(true);
     try {
       const newStudent = await addStudent(
-        teacher.uid,
+        teacher.id,
         form.name.trim(),
         form.nativeLanguage,
         form.pin,
@@ -570,7 +567,7 @@ function SettingsTab({
     e.preventDefault();
     setSaving(true);
     try {
-      await updateTeacherApiKeys(teacher.uid, geminiKey.trim(), pixabayKey.trim());
+      await updateTeacherApiKeys(teacher.id, geminiKey.trim(), pixabayKey.trim());
       onTeacherUpdate({ ...teacher, geminiApiKey: geminiKey.trim(), pixabayApiKey: pixabayKey.trim() });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -722,7 +719,7 @@ function SettingsTab({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {[
             { label: '이름', value: teacher.name },
-            { label: '이메일', value: teacher.email },
+            { label: '아이디', value: teacher.id },
           ].map(r => (
             <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
               <span style={{ color: '#6b7280' }}>{r.label}</span>

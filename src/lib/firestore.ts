@@ -20,30 +20,46 @@ function generateClassCode(): string {
 }
 
 // ─── 교사 ─────────────────────────────────────────────────────────────────────
-export async function getTeacher(uid: string): Promise<Teacher | null> {
-  const snap = await getDoc(doc(db, 'teachers', uid));
+export async function getTeacher(id: string): Promise<Teacher | null> {
+  const snap = await getDoc(doc(db, 'teachers', id));
   return snap.exists() ? (snap.data() as Teacher) : null;
 }
 
-export async function createTeacher(uid: string, name: string, email: string): Promise<Teacher> {
+/** 회원가입: 아이디 중복 확인 후 생성 */
+export async function createTeacher(id: string, password: string, name: string): Promise<Teacher> {
+  const existing = await getDoc(doc(db, 'teachers', id));
+  if (existing.exists()) throw new Error('ID_TAKEN');
   const teacher: Teacher = {
-    uid,
+    id,
+    password,
     name,
-    email,
     geminiApiKey: '',
     pixabayApiKey: '',
     classCode: generateClassCode(),
   };
-  await setDoc(doc(db, 'teachers', uid), teacher);
+  await setDoc(doc(db, 'teachers', id), teacher);
   return teacher;
 }
 
+/** 로그인: 아이디+비밀번호 확인 */
+export async function loginTeacher(id: string, password: string): Promise<Teacher | null> {
+  const snap = await getDoc(doc(db, 'teachers', id));
+  if (!snap.exists()) return null;
+  const teacher = snap.data() as Teacher;
+  if (teacher.password !== password) return null;
+  return teacher;
+}
+
+export async function updateTeacherPassword(id: string, newPassword: string): Promise<void> {
+  await updateDoc(doc(db, 'teachers', id), { password: newPassword });
+}
+
 export async function updateTeacherApiKeys(
-  uid: string,
+  id: string,
   geminiApiKey: string,
   pixabayApiKey: string,
 ): Promise<void> {
-  await updateDoc(doc(db, 'teachers', uid), { geminiApiKey, pixabayApiKey });
+  await updateDoc(doc(db, 'teachers', id), { geminiApiKey, pixabayApiKey });
 }
 
 export async function getTeacherByClassCode(classCode: string): Promise<Teacher | null> {
@@ -107,7 +123,7 @@ export async function findStudent(
 
 // ─── 관리자 ───────────────────────────────────────────────────────────────────
 const ADMIN_DOC = doc(db, 'config', 'admin');
-const DEFAULT_ADMIN: AdminConfig = { geminiApiKey: '', pixabayApiKey: '' };
+const DEFAULT_ADMIN: AdminConfig = { password: '1234', geminiApiKey: '', pixabayApiKey: '' };
 
 export async function getAdminConfig(): Promise<AdminConfig> {
   const snap = await getDoc(ADMIN_DOC);
@@ -116,6 +132,25 @@ export async function getAdminConfig(): Promise<AdminConfig> {
     return DEFAULT_ADMIN;
   }
   return snap.data() as AdminConfig;
+}
+
+/** 관리자 로그인: 비밀번호 확인. 문서 없으면 초기 비밀번호로 생성 */
+export async function loginAdmin(password: string): Promise<AdminConfig | null> {
+  const snap = await getDoc(ADMIN_DOC);
+  if (!snap.exists()) {
+    if (password === DEFAULT_ADMIN.password) {
+      await setDoc(ADMIN_DOC, DEFAULT_ADMIN);
+      return DEFAULT_ADMIN;
+    }
+    return null;
+  }
+  const config = snap.data() as AdminConfig;
+  if (config.password !== password) return null;
+  return config;
+}
+
+export async function updateAdminPassword(newPassword: string): Promise<void> {
+  await updateDoc(ADMIN_DOC, { password: newPassword });
 }
 
 export async function updateAdminApiKeys(geminiApiKey: string, pixabayApiKey: string): Promise<void> {

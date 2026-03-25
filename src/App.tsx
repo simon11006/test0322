@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './lib/firebase';
-import { signOut } from 'firebase/auth';
 import { getTeacher, getStudentById, updateStudentProgress, getAdminConfig } from './lib/firestore';
-import { ADMIN_EMAIL } from './components/auth/AdminAuth';
 import type { AppScreen, Level, NativeLanguage, Teacher, Student, AdminConfig } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import Navigation from './components/Navigation';
@@ -36,39 +32,41 @@ export default function App() {
   const [authState, setAuthState] = useState<AuthState>({ mode: 'loading' });
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async firebaseUser => {
-      if (firebaseUser) {
-        // 관리자 확인
-        if (firebaseUser.email === ADMIN_EMAIL) {
-          try {
-            const adminCfg = await getAdminConfig();
-            setAuthState({ mode: 'admin', config: adminCfg });
-          } catch {
-            setAuthState({ mode: 'login' });
-          }
-          return;
-        }
-        // 교사 로그인 확인
+    const restoreSession = async () => {
+      // 관리자 세션
+      if (localStorage.getItem('admin_session')) {
         try {
-          const teacher = await getTeacher(firebaseUser.uid);
+          const config = await getAdminConfig();
+          setAuthState({ mode: 'admin', config });
+          return;
+        } catch {
+          localStorage.removeItem('admin_session');
+        }
+      }
+
+      // 교사 세션
+      const teacherSession = localStorage.getItem('teacher_session');
+      if (teacherSession) {
+        try {
+          const { teacherId } = JSON.parse(teacherSession);
+          const teacher = await getTeacher(teacherId);
           if (teacher) {
             setAuthState({ mode: 'teacher', teacher });
             return;
           }
-        } catch {
-          // ignore
-        }
+        } catch { /* ignore */ }
+        localStorage.removeItem('teacher_session');
       }
-      // 학생 세션 확인
-      const session = sessionStorage.getItem('student_session');
-      if (session) {
+
+      // 학생 세션
+      const studentSession = sessionStorage.getItem('student_session');
+      if (studentSession) {
         try {
-          const { studentId } = JSON.parse(session);
+          const { studentId } = JSON.parse(studentSession);
           const student = await getStudentById(studentId);
           if (student) {
             const teacher = await getTeacher(student.teacherId);
             if (teacher) {
-              // 교사 API 키 없으면 관리자 기본 키 사용
               let effectiveTeacher = teacher;
               if (!teacher.geminiApiKey) {
                 try {
@@ -90,9 +88,11 @@ export default function App() {
           sessionStorage.removeItem('student_session');
         }
       }
+
       setAuthState({ mode: 'login' });
-    });
-    return () => unsub();
+    };
+
+    restoreSession();
   }, []);
 
   if (authState.mode === 'loading') return <LoadingScreen />;
@@ -109,6 +109,7 @@ export default function App() {
   if (authState.mode === 'admin-auth') {
     return (
       <AdminAuth
+        onSuccess={config => setAuthState({ mode: 'admin', config })}
         onBack={() => setAuthState({ mode: 'login' })}
       />
     );
@@ -119,7 +120,10 @@ export default function App() {
       <AdminDashboard
         config={authState.config}
         onConfigUpdate={config => setAuthState({ mode: 'admin', config })}
-        onLogout={() => signOut(auth)}
+        onLogout={() => {
+          localStorage.removeItem('admin_session');
+          setAuthState({ mode: 'login' });
+        }}
       />
     );
   }
@@ -166,7 +170,10 @@ export default function App() {
       <TeacherDashboard
         teacher={authState.teacher}
         onTeacherUpdate={teacher => setAuthState({ mode: 'teacher', teacher })}
-        onLogout={() => setAuthState({ mode: 'login' })}
+        onLogout={() => {
+          localStorage.removeItem('teacher_session');
+          setAuthState({ mode: 'login' });
+        }}
       />
     );
   }

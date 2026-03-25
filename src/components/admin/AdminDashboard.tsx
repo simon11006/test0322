@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  updatePassword,
-} from 'firebase/auth';
-import { auth } from '../../lib/firebase';
-import { updateAdminApiKeys } from '../../lib/firestore';
-import { ADMIN_EMAIL, padAdminPassword } from '../auth/AdminAuth';
+import { updateAdminApiKeys, updateAdminPassword, loginAdmin } from '../../lib/firestore';
 import type { AdminConfig } from '../../types';
 
 interface AdminDashboardProps {
@@ -310,24 +303,19 @@ function PasswordTab() {
 
     setSaving(true);
     try {
-      const user = auth.currentUser;
-      if (!user) { setError('로그인 세션이 만료되었습니다.'); return; }
-      // 현재 비밀번호로 재인증
-      const credential = EmailAuthProvider.credential(ADMIN_EMAIL, padAdminPassword(currentPw));
-      await reauthenticateWithCredential(user, credential);
-      // 새 비밀번호로 변경
-      await updatePassword(user, padAdminPassword(newPw));
+      // 현재 비밀번호로 Firestore에서 재확인
+      const verified = await loginAdmin(currentPw);
+      if (!verified) {
+        setError('현재 비밀번호가 올바르지 않습니다.');
+        return;
+      }
+      await updateAdminPassword(newPw);
       setSuccess(true);
       setCurrentPw('');
       setNewPw('');
       setConfirmPw('');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('wrong-password') || msg.includes('invalid-credential')) {
-        setError('현재 비밀번호가 올바르지 않습니다.');
-      } else {
-        setError('저장 중 오류가 발생했습니다.');
-      }
+    } catch {
+      setError('저장 중 오류가 발생했습니다.');
     } finally {
       setSaving(false);
     }

@@ -32,7 +32,7 @@ export default function StudentAuth({ onSuccess, onBack }: StudentAuthProps) {
         setLoading(false);
         return;
       }
-      const list = await getStudents(found.uid);
+      const list = await getStudents(found.id);
       if (list.length === 0) {
         setError('이 학급에 등록된 학생이 없습니다. 선생님께 문의하세요.');
         setLoading(false);
@@ -71,7 +71,7 @@ export default function StudentAuth({ onSuccess, onBack }: StudentAuthProps) {
     setLoading(true);
     setError('');
     try {
-      const student = await findStudent(teacher.uid, selectedName, enteredPin);
+      const student = await findStudent(teacher.id, selectedName, enteredPin);
       if (!student) {
         setError('PIN이 올바르지 않습니다. 다시 시도해 주세요.');
         setPin('');

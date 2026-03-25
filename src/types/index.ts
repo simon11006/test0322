@@ -3,9 +3,9 @@ export type AppScreen = 'home' | 'translate' | 'level-test' | 'learning' | 'prog
 
 // 교사 계정
 export interface Teacher {
-  uid: string;
+  id: string;       // 교사가 직접 정한 아이디 (Firestore 문서 ID)
+  password: string; // 비밀번호 (Firestore에 저장)
   name: string;
-  email: string;
   geminiApiKey: string;
   pixabayApiKey: string;
   classCode: string;
@@ -104,6 +104,7 @@ export interface AppSettings {
 
 // 관리자 설정
 export interface AdminConfig {
+  password: string;
   geminiApiKey: string;
   pixabayApiKey: string;
 }

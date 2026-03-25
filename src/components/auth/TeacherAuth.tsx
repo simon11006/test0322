@@ -1,24 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  updateProfile,
-} from 'firebase/auth';
-import { auth } from '../../lib/firebase';
-import { createTeacher, getTeacher } from '../../lib/firestore';
+import { createTeacher, loginTeacher } from '../../lib/firestore';
 import type { Teacher } from '../../types';
 
 interface TeacherAuthProps {
   onSuccess: (teacher: Teacher) => void;
   onBack: () => void;
   onAdmin: () => void;
-}
-
-// 아이디를 Firebase Auth용 이메일로 변환
-// 이미 이메일 형식이면 그대로, 아니면 @korean-app.local 추가
-function toFirebaseEmail(id: string): string {
-  return id.includes('@') ? id : `${id}@korean-app.local`;
 }
 
 export default function TeacherAuth({ onSuccess, onBack, onAdmin }: TeacherAuthProps) {
@@ -33,30 +21,27 @@ export default function TeacherAuth({ onSuccess, onBack, onAdmin }: TeacherAuthP
     e.preventDefault();
     setError('');
     setLoading(true);
-    const email = toFirebaseEmail(userId.trim());
+    const id = userId.trim();
     try {
       if (mode === 'register') {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(cred.user, { displayName: name });
-        const teacher = await createTeacher(cred.user.uid, name, userId.trim());
+        if (!name.trim()) { setError('이름을 입력해주세요.'); return; }
+        if (!id) { setError('아이디를 입력해주세요.'); return; }
+        if (!password) { setError('비밀번호를 입력해주세요.'); return; }
+        const teacher = await createTeacher(id, password, name.trim());
+        localStorage.setItem('teacher_session', JSON.stringify({ teacherId: teacher.id }));
         onSuccess(teacher);
       } else {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        const teacher = await getTeacher(cred.user.uid);
+        const teacher = await loginTeacher(id, password);
         if (!teacher) {
-          setError('교사 계정 정보를 찾을 수 없습니다.');
-          setLoading(false);
+          setError('아이디 또는 비밀번호가 올바르지 않습니다.');
           return;
         }
+        localStorage.setItem('teacher_session', JSON.stringify({ teacherId: teacher.id }));
         onSuccess(teacher);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('email-already-in-use')) setError('이미 사용 중인 아이디입니다.');
-      else if (msg.includes('wrong-password') || msg.includes('invalid-credential'))
-        setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-      else if (msg.includes('user-not-found')) setError('등록된 계정을 찾을 수 없습니다.');
-      else if (msg.includes('weak-password')) setError('비밀번호는 6자 이상이어야 합니다.');
+      if (msg === 'ID_TAKEN') setError('이미 사용 중인 아이디입니다.');
       else setError('오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {
       setLoading(false);
@@ -88,6 +73,7 @@ export default function TeacherAuth({ onSuccess, onBack, onAdmin }: TeacherAuthP
         }}
       >
         <button
+          type="button"
           onClick={onBack}
           style={{
             background: 'none',
@@ -123,44 +109,35 @@ export default function TeacherAuth({ onSuccess, onBack, onAdmin }: TeacherAuthP
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {mode === 'register' && (
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                이름
-              </label>
+              <label style={labelStyle}>이름</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="홍길동"
-                required
                 style={inputStyle}
               />
             </div>
           )}
 
           <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-              아이디
-            </label>
+            <label style={labelStyle}>아이디</label>
             <input
               type="text"
               value={userId}
               onChange={e => setUserId(e.target.value)}
               placeholder="아이디 입력"
-              required
               style={inputStyle}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-              비밀번호
-            </label>
+            <label style={labelStyle}>비밀번호</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder={mode === 'register' ? '6자 이상 입력' : '비밀번호'}
-              required
+              placeholder="비밀번호 입력"
               style={inputStyle}
             />
           </div>
@@ -204,6 +181,7 @@ export default function TeacherAuth({ onSuccess, onBack, onAdmin }: TeacherAuthP
 
         <div style={{ textAlign: 'center', marginTop: '20px' }}>
           <button
+            type="button"
             onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
             style={{
               background: 'none',
@@ -218,9 +196,9 @@ export default function TeacherAuth({ onSuccess, onBack, onAdmin }: TeacherAuthP
           </button>
         </div>
 
-        {/* 관리자 로그인 */}
         <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f3f4f6' }}>
           <button
+            type="button"
             onClick={onAdmin}
             style={{
               background: 'none',
@@ -237,6 +215,14 @@ export default function TeacherAuth({ onSuccess, onBack, onAdmin }: TeacherAuthP
     </div>
   );
 }
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '14px',
+  fontWeight: 600,
+  color: '#374151',
+  marginBottom: '6px',
+};
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
