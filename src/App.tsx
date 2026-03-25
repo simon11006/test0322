@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './lib/firebase';
-import { getTeacher, getStudentById, updateStudentProgress } from './lib/firestore';
-import type { AppScreen, Level, NativeLanguage, Teacher, Student } from './types';
+import { getTeacher, getStudentById, updateStudentProgress, getAdminConfig } from './lib/firestore';
+import type { AppScreen, Level, NativeLanguage, Teacher, Student, AdminConfig } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import Navigation from './components/Navigation';
 import HomeScreen from './components/HomeScreen';
@@ -14,7 +14,9 @@ import ProgressView from './components/ProgressView';
 import LoginScreen from './components/auth/LoginScreen';
 import TeacherAuth from './components/auth/TeacherAuth';
 import StudentAuth from './components/auth/StudentAuth';
+import AdminAuth from './components/auth/AdminAuth';
 import TeacherDashboard from './components/teacher/TeacherDashboard';
+import AdminDashboard from './components/admin/AdminDashboard';
 
 // ─── 인증 상태 ────────────────────────────────────────────────────────────────
 type AuthState =
@@ -22,8 +24,10 @@ type AuthState =
   | { mode: 'login' }
   | { mode: 'teacher-auth' }
   | { mode: 'student-auth' }
+  | { mode: 'admin-auth' }
   | { mode: 'teacher'; teacher: Teacher }
-  | { mode: 'student'; student: Student; teacher: Teacher };
+  | { mode: 'student'; student: Student; teacher: Teacher }
+  | { mode: 'admin'; config: AdminConfig };
 
 // ─── 루트 앱 ──────────────────────────────────────────────────────────────────
 export default function App() {
@@ -52,7 +56,21 @@ export default function App() {
           if (student) {
             const teacher = await getTeacher(student.teacherId);
             if (teacher) {
-              setAuthState({ mode: 'student', student, teacher });
+              // 교사 API 키 없으면 관리자 기본 키 사용
+              let effectiveTeacher = teacher;
+              if (!teacher.geminiApiKey) {
+                try {
+                  const adminCfg = await getAdminConfig();
+                  if (adminCfg.geminiApiKey) {
+                    effectiveTeacher = {
+                      ...teacher,
+                      geminiApiKey: adminCfg.geminiApiKey,
+                      pixabayApiKey: teacher.pixabayApiKey || adminCfg.pixabayApiKey,
+                    };
+                  }
+                } catch { /* 관리자 키 없으면 그냥 진행 */ }
+              }
+              setAuthState({ mode: 'student', student, teacher: effectiveTeacher });
               return;
             }
           }
@@ -72,6 +90,26 @@ export default function App() {
       <LoginScreen
         onTeacher={() => setAuthState({ mode: 'teacher-auth' })}
         onStudent={() => setAuthState({ mode: 'student-auth' })}
+        onAdmin={() => setAuthState({ mode: 'admin-auth' })}
+      />
+    );
+  }
+
+  if (authState.mode === 'admin-auth') {
+    return (
+      <AdminAuth
+        onSuccess={config => setAuthState({ mode: 'admin', config })}
+        onBack={() => setAuthState({ mode: 'login' })}
+      />
+    );
+  }
+
+  if (authState.mode === 'admin') {
+    return (
+      <AdminDashboard
+        config={authState.config}
+        onConfigUpdate={config => setAuthState({ mode: 'admin', config })}
+        onLogout={() => setAuthState({ mode: 'login' })}
       />
     );
   }
@@ -88,11 +126,24 @@ export default function App() {
   if (authState.mode === 'student-auth') {
     return (
       <StudentAuth
-        onSuccess={(student, teacher) => {
+        onSuccess={async (student, teacher) => {
           sessionStorage.setItem('student_session', JSON.stringify({ studentId: student.id }));
-          // 마지막 접속 시간 업데이트
           updateStudentProgress(student.id, { lastActivity: Date.now() }).catch(() => {});
-          setAuthState({ mode: 'student', student, teacher });
+          // 교사 API 키 없으면 관리자 기본 키 사용
+          let effectiveTeacher = teacher;
+          if (!teacher.geminiApiKey) {
+            try {
+              const adminCfg = await getAdminConfig();
+              if (adminCfg.geminiApiKey) {
+                effectiveTeacher = {
+                  ...teacher,
+                  geminiApiKey: adminCfg.geminiApiKey,
+                  pixabayApiKey: teacher.pixabayApiKey || adminCfg.pixabayApiKey,
+                };
+              }
+            } catch { /* 관리자 키 없으면 그냥 진행 */ }
+          }
+          setAuthState({ mode: 'student', student, teacher: effectiveTeacher });
         }}
         onBack={() => setAuthState({ mode: 'login' })}
       />

@@ -11,7 +11,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Teacher, Student, NativeLanguage } from '../types';
+import type { Teacher, Student, NativeLanguage, AdminConfig } from '../types';
 
 // ─── 학급 코드 생성 ───────────────────────────────────────────────────────────
 function generateClassCode(): string {
@@ -105,6 +105,28 @@ export async function findStudent(
   return { ...snap.docs[0].data(), id: snap.docs[0].id } as Student;
 }
 
+// ─── 관리자 ───────────────────────────────────────────────────────────────────
+const ADMIN_DOC = doc(db, 'config', 'admin');
+const DEFAULT_ADMIN: AdminConfig = { password: '1234', geminiApiKey: '', pixabayApiKey: '' };
+
+export async function getAdminConfig(): Promise<AdminConfig> {
+  const snap = await getDoc(ADMIN_DOC);
+  if (!snap.exists()) {
+    await setDoc(ADMIN_DOC, DEFAULT_ADMIN);
+    return DEFAULT_ADMIN;
+  }
+  return snap.data() as AdminConfig;
+}
+
+export async function updateAdminPassword(newPassword: string): Promise<void> {
+  await updateDoc(ADMIN_DOC, { password: newPassword });
+}
+
+export async function updateAdminApiKeys(geminiApiKey: string, pixabayApiKey: string): Promise<void> {
+  await updateDoc(ADMIN_DOC, { geminiApiKey, pixabayApiKey });
+}
+
+// ─── 학생 진도 ─────────────────────────────────────────────────────────────────
 export async function updateStudentProgress(
   studentId: string,
   updates: Partial<Pick<Student, 'level' | 'lastActivity' | 'wordsLearned' | 'quizzesTaken'>>,

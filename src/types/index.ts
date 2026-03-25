@@ -102,6 +102,13 @@ export interface AppSettings {
   darkMode: boolean;
 }
 
+// 관리자 설정
+export interface AdminConfig {
+  password: string;
+  geminiApiKey: string;
+  pixabayApiKey: string;
+}
+
 // Gemini 번역 응답
 export interface TranslationResponse {
   korean: string;
