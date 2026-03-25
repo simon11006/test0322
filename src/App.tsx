@@ -9,6 +9,7 @@ import TranslationCardView from './components/TranslationCard';
 import LevelTest from './components/LevelTest';
 import LearningContent from './components/LearningContent';
 import ProgressView from './components/ProgressView';
+import StudentSettings from './components/StudentSettings';
 import LoginScreen from './components/auth/LoginScreen';
 import TeacherAuth from './components/auth/TeacherAuth';
 import StudentAuth from './components/auth/StudentAuth';
@@ -243,6 +244,11 @@ function StudentApp({
     setScreen(target);
   };
 
+  const handleResetLevel = () => {
+    setLevel(undefined);
+    setScreen('level-test');
+  };
+
   // API 키 미설정 안내
   if (!apiKey) {
     return (
@@ -398,6 +404,24 @@ function StudentApp({
                 nativeLanguage={nativeLanguage ?? 'en'}
                 level={level}
                 darkMode={darkMode}
+              />
+            </motion.div>
+          )}
+
+          {screen === 'settings' && (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <StudentSettings
+                nativeLanguage={nativeLanguage}
+                onLanguageChange={(lang: NativeLanguage) => setNativeLanguage(lang)}
+                level={level}
+                onResetLevel={handleResetLevel}
+                darkMode={darkMode}
+                onToggleDark={() => setDarkMode((d: boolean) => !d)}
               />
             </motion.div>
           )}

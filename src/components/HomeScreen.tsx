@@ -91,42 +91,40 @@ export default function HomeScreen({
         </motion.div>
       )}
 
-      {/* 모국어 선택 */}
-      <div className="mb-5">
-        <h2 className="text-base font-bold mb-3" style={{ fontFamily: 'Jua, sans-serif', color: textColor }}>
-          나의 모국어를 선택해요
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {SUPPORTED_LANGUAGES.map((lang, i) => (
-            <motion.button
-              key={lang.code}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.04 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => onLanguageSelect(lang.code)}
-              className="p-3 rounded-2xl flex items-center gap-2 text-sm font-medium transition-all"
-              style={{
-                background: nativeLanguage === lang.code
-                  ? '#FF6B6B'
-                  : cardBg,
-                color: nativeLanguage === lang.code
-                  ? 'white'
-                  : textColor,
-                border: `2px solid ${nativeLanguage === lang.code ? '#FF6B6B' : 'transparent'}`,
-                fontFamily: 'Noto Sans KR, sans-serif',
-              }}
-            >
-              <span className="text-xl">{lang.flag}</span>
-              <div className="text-left">
-                <div className="font-bold text-xs">{lang.name}</div>
-                <div className="text-xs opacity-70">{lang.nativeName}</div>
-              </div>
-            </motion.button>
-          ))}
+      {/* 모국어 미선택 시에만 언어 선택 표시 */}
+      {!nativeLanguage && (
+        <div className="mb-5">
+          <h2 className="text-base font-bold mb-3" style={{ fontFamily: 'Jua, sans-serif', color: textColor }}>
+            나의 모국어를 선택해요
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {SUPPORTED_LANGUAGES.map((lang, i) => (
+              <motion.button
+                key={lang.code}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.04 }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => onLanguageSelect(lang.code)}
+                className="p-3 rounded-2xl flex items-center gap-2 text-sm font-medium transition-all"
+                style={{
+                  background: cardBg,
+                  color: textColor,
+                  border: '2px solid transparent',
+                  fontFamily: 'Noto Sans KR, sans-serif',
+                }}
+              >
+                <span className="text-xl">{lang.flag}</span>
+                <div className="text-left">
+                  <div className="font-bold text-xs">{lang.name}</div>
+                  <div className="text-xs opacity-70">{lang.nativeName}</div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 빠른 이동 */}
       {nativeLanguage && (
@@ -171,6 +169,19 @@ export default function HomeScreen({
           className="text-center py-6"
         >
           <p className="text-gray-400 text-sm">위에서 나의 모국어를 선택하면 학습을 시작할 수 있어요! 👆</p>
+        </motion.div>
+      )}
+
+      {/* 모국어 선택된 경우 - 설정에서 변경 안내 */}
+      {nativeLanguage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-2 text-center"
+        >
+          <p className="text-xs text-gray-400">
+            모국어를 변경하려면 하단 ⚙️ 설정 탭을 이용하세요.
+          </p>
         </motion.div>
       )}
     </div>

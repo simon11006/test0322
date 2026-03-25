@@ -15,11 +15,11 @@ interface NavigationProps {
 }
 
 const NAV_ITEMS: { screen: AppScreen; label: string; icon: string }[] = [
-  { screen: 'home',      label: '홈',      icon: '🏠' },
-  { screen: 'translate', label: '번역',    icon: '🔤' },
-  { screen: 'level-test', label: '진단',   icon: '📝' },
-  { screen: 'learning',  label: '학습',    icon: '📚' },
-  { screen: 'progress',  label: '기록',    icon: '📊' },
+  { screen: 'home',      label: '홈',   icon: '🏠' },
+  { screen: 'translate', label: '번역', icon: '🔤' },
+  { screen: 'learning',  label: '학습', icon: '📚' },
+  { screen: 'progress',  label: '기록', icon: '📊' },
+  { screen: 'settings',  label: '설정', icon: '⚙️' },
 ];
 
 export default function Navigation({

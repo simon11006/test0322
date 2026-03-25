@@ -1,5 +1,5 @@
 // 앱 화면 상태 (학생용)
-export type AppScreen = 'home' | 'translate' | 'level-test' | 'learning' | 'progress';
+export type AppScreen = 'home' | 'translate' | 'level-test' | 'learning' | 'progress' | 'settings';
 
 // 교사 계정
 export interface Teacher {
