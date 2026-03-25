@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { updateAdminPassword, updateAdminApiKeys, getAdminConfig } from '../../lib/firestore';
+import {
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword,
+} from 'firebase/auth';
+import { auth } from '../../lib/firebase';
+import { updateAdminApiKeys } from '../../lib/firestore';
+import { ADMIN_EMAIL, padAdminPassword } from '../auth/AdminAuth';
 import type { AdminConfig } from '../../types';
 
 interface AdminDashboardProps {
@@ -97,7 +104,7 @@ export default function AdminDashboard({ config, onConfigUpdate, onLogout }: Adm
           <ApiKeysTab config={config} onConfigUpdate={onConfigUpdate} />
         )}
         {tab === 'password' && (
-          <PasswordTab onConfigUpdate={onConfigUpdate} />
+          <PasswordTab />
         )}
       </div>
     </div>
@@ -276,7 +283,7 @@ function ApiKeysTab({
 }
 
 // ─── 비밀번호 변경 탭 ─────────────────────────────────────────────────────────
-function PasswordTab({ onConfigUpdate }: { onConfigUpdate: (c: AdminConfig) => void }) {
+function PasswordTab() {
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -303,20 +310,24 @@ function PasswordTab({ onConfigUpdate }: { onConfigUpdate: (c: AdminConfig) => v
 
     setSaving(true);
     try {
-      // 현재 비밀번호 Firestore에서 재확인
-      const config = await getAdminConfig();
-      if (currentPw !== config.password) {
-        setError('현재 비밀번호가 올바르지 않습니다.');
-        return;
-      }
-      await updateAdminPassword(newPw);
-      onConfigUpdate({ ...config, password: newPw });
+      const user = auth.currentUser;
+      if (!user) { setError('로그인 세션이 만료되었습니다.'); return; }
+      // 현재 비밀번호로 재인증
+      const credential = EmailAuthProvider.credential(ADMIN_EMAIL, padAdminPassword(currentPw));
+      await reauthenticateWithCredential(user, credential);
+      // 새 비밀번호로 변경
+      await updatePassword(user, padAdminPassword(newPw));
       setSuccess(true);
       setCurrentPw('');
       setNewPw('');
       setConfirmPw('');
-    } catch {
-      setError('저장 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('wrong-password') || msg.includes('invalid-credential')) {
+        setError('현재 비밀번호가 올바르지 않습니다.');
+      } else {
+        setError('저장 중 오류가 발생했습니다.');
+      }
     } finally {
       setSaving(false);
     }

@@ -104,7 +104,6 @@ export interface AppSettings {
 
 // 관리자 설정
 export interface AdminConfig {
-  password: string;
   geminiApiKey: string;
   pixabayApiKey: string;
 }

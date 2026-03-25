@@ -107,7 +107,7 @@ export async function findStudent(
 
 // ─── 관리자 ───────────────────────────────────────────────────────────────────
 const ADMIN_DOC = doc(db, 'config', 'admin');
-const DEFAULT_ADMIN: AdminConfig = { password: '1234', geminiApiKey: '', pixabayApiKey: '' };
+const DEFAULT_ADMIN: AdminConfig = { geminiApiKey: '', pixabayApiKey: '' };
 
 export async function getAdminConfig(): Promise<AdminConfig> {
   const snap = await getDoc(ADMIN_DOC);
@@ -116,10 +116,6 @@ export async function getAdminConfig(): Promise<AdminConfig> {
     return DEFAULT_ADMIN;
   }
   return snap.data() as AdminConfig;
-}
-
-export async function updateAdminPassword(newPassword: string): Promise<void> {
-  await updateDoc(ADMIN_DOC, { password: newPassword });
 }
 
 export async function updateAdminApiKeys(geminiApiKey: string, pixabayApiKey: string): Promise<void> {

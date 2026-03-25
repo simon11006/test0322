@@ -1,14 +1,24 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { getAdminConfig } from '../../lib/firestore';
-import type { AdminConfig } from '../../types';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
+import { auth } from '../../lib/firebase';
+
+// 관리자 Firebase Auth 이메일 (고정)
+export const ADMIN_EMAIL = 'admin@korean-app.local';
+
+// Firebase Auth는 6자 이상 필요 → 짧은 비밀번호는 내부적으로 패딩
+export function padAdminPassword(pw: string): string {
+  return pw.padEnd(6, '_');
+}
 
 interface AdminAuthProps {
-  onSuccess: (config: AdminConfig) => void;
   onBack: () => void;
 }
 
-export default function AdminAuth({ onSuccess, onBack }: AdminAuthProps) {
+export default function AdminAuth({ onBack }: AdminAuthProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,15 +30,30 @@ export default function AdminAuth({ onSuccess, onBack }: AdminAuthProps) {
     }
     setLoading(true);
     setError('');
+    const firebasePw = padAdminPassword(password);
     try {
-      const config = await getAdminConfig();
-      if (password !== config.password) {
+      await signInWithEmailAndPassword(auth, ADMIN_EMAIL, firebasePw);
+      // 성공 → App.tsx의 onAuthStateChanged가 admin 대시보드로 라우팅
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('user-not-found') || msg.includes('invalid-credential') || msg.includes('CONFIGURATION_NOT_FOUND')) {
+        // 최초 접근 시 계정 자동 생성 (초기 비밀번호 "1234")
+        try {
+          await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, firebasePw);
+          // 성공 → onAuthStateChanged가 처리
+        } catch (createErr: unknown) {
+          const createMsg = createErr instanceof Error ? createErr.message : '';
+          if (createMsg.includes('email-already-in-use')) {
+            setError('비밀번호가 올바르지 않습니다.');
+          } else {
+            setError('오류가 발생했습니다. 다시 시도해 주세요.');
+          }
+        }
+      } else if (msg.includes('wrong-password') || msg.includes('invalid-login-credentials')) {
         setError('비밀번호가 올바르지 않습니다.');
-        return;
+      } else {
+        setError('오류가 발생했습니다. 다시 시도해 주세요.');
       }
-      onSuccess(config);
-    } catch {
-      setError('오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -137,6 +162,7 @@ export default function AdminAuth({ onSuccess, onBack }: AdminAuthProps) {
         </motion.button>
 
         <button
+          type="button"
           onClick={onBack}
           style={{
             width: '100%',

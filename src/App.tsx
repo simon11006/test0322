@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './lib/firebase';
+import { signOut } from 'firebase/auth';
 import { getTeacher, getStudentById, updateStudentProgress, getAdminConfig } from './lib/firestore';
+import { ADMIN_EMAIL } from './components/auth/AdminAuth';
 import type { AppScreen, Level, NativeLanguage, Teacher, Student, AdminConfig } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import Navigation from './components/Navigation';
@@ -36,6 +38,16 @@ export default function App() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async firebaseUser => {
       if (firebaseUser) {
+        // 관리자 확인
+        if (firebaseUser.email === ADMIN_EMAIL) {
+          try {
+            const adminCfg = await getAdminConfig();
+            setAuthState({ mode: 'admin', config: adminCfg });
+          } catch {
+            setAuthState({ mode: 'login' });
+          }
+          return;
+        }
         // 교사 로그인 확인
         try {
           const teacher = await getTeacher(firebaseUser.uid);
@@ -97,7 +109,6 @@ export default function App() {
   if (authState.mode === 'admin-auth') {
     return (
       <AdminAuth
-        onSuccess={config => setAuthState({ mode: 'admin', config })}
         onBack={() => setAuthState({ mode: 'login' })}
       />
     );
@@ -108,7 +119,7 @@ export default function App() {
       <AdminDashboard
         config={authState.config}
         onConfigUpdate={config => setAuthState({ mode: 'admin', config })}
-        onLogout={() => setAuthState({ mode: 'login' })}
+        onLogout={() => signOut(auth)}
       />
     );
   }
