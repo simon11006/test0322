@@ -22,6 +22,9 @@ async function callGemini(apiKey: string, prompt: string, model = TEXT_MODEL): P
   });
 
   if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error('RATE_LIMIT');
+    }
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.error?.message ?? `API 오류: ${res.status}`);
   }
@@ -116,6 +119,25 @@ JSON 배열 형식으로만 응답하세요 (다른 텍스트 없이):
   return JSON.parse(json) as QuizQuestion[];
 }
 
+// ─── 학습 콘텐츠 캐시 (24시간) ────────────────────────────────────────────────
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function cacheKey(level: Level, category: string, language: NativeLanguage) {
+  return `lc_cache_${level}_${category}_${language}`;
+}
+function getCache(key: string): LearningItem[] | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(key); return null; }
+    return data as LearningItem[];
+  } catch { return null; }
+}
+function setCache(key: string, data: LearningItem[]) {
+  try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch { /* 저장 공간 부족 시 무시 */ }
+}
+
 // 레벨별 학습 콘텐츠 생성
 export async function generateLearningContent(
   apiKey: string,
@@ -123,6 +145,10 @@ export async function generateLearningContent(
   category: string,
   language: NativeLanguage,
 ): Promise<LearningItem[]> {
+  // 캐시 확인 (API 요청 절약)
+  const key = cacheKey(level, category, language);
+  const cached = getCache(key);
+  if (cached) return cached;
   const langName = getLanguageName(language);
 
   const levelPrompts: Record<Level, string> = {
@@ -144,7 +170,9 @@ JSON 배열로만 응답하세요:
   const prompt = `${SAFETY_PREFIX}${levelPrompts[level]}`;
   const raw = await callGemini(apiKey, prompt);
   const json = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  return JSON.parse(json) as LearningItem[];
+  const result = JSON.parse(json) as LearningItem[];
+  setCache(key, result);
+  return result;
 }
 
 // 복습 퀴즈 생성

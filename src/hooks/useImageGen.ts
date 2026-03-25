@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { generateImage } from '../utils/geminiClient';
 
 // 카테고리별 폴백 이모지 매핑 (300+ 단어)
 const FALLBACK_EMOJIS: Record<string, string> = {
@@ -137,19 +136,14 @@ export function useImageGen(apiKey: string) {
     setError(null);
     setImageUrl(null);
     try {
-      // 1순위: Gemini AI 이미지 생성
-      const url = await generateImage(apiKey, koreanWord);
-      setImageUrl(url);
-      return url;
-    } catch {
-      // 2순위: 이모지 사전 (300+ 단어)
+      // 1순위: 이모지 사전 (300+ 단어, API 요청 없음)
       const emoji = getFallbackEmoji(koreanWord);
       if (emoji) {
         setImageUrl(`emoji:${emoji}`);
         return null;
       }
 
-      // 3순위: Pixabay 무료 이미지 API
+      // 2순위: Pixabay 무료 이미지 API
       const pixabayUrl = await fetchPixabayImage(koreanWord);
       if (pixabayUrl) {
         setImageUrl(pixabayUrl);
@@ -157,7 +151,6 @@ export function useImageGen(apiKey: string) {
       }
 
       // 최종: 기본 이모지
-      setError('이미지를 찾을 수 없습니다');
       setImageUrl('emoji:🖼️');
       return null;
     } finally {

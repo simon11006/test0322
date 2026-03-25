@@ -331,8 +331,12 @@ export default function LearningContent({
 
       {error && (
         <div className="text-center py-8 text-gray-400">
-          <p className="text-3xl mb-2">😅</p>
-          <p className="text-sm">콘텐츠를 불러오지 못했어요. 다시 시도해주세요.</p>
+          <p className="text-3xl mb-2">{error === 'RATE_LIMIT' ? '⏳' : '😅'}</p>
+          <p className="text-sm font-medium" style={{ color: error === 'RATE_LIMIT' ? '#f59e0b' : undefined }}>
+            {error === 'RATE_LIMIT'
+              ? 'API 요청 한도 초과. 1분 후 다시 시도해주세요.'
+              : '콘텐츠를 불러오지 못했어요. 다시 시도해주세요.'}
+          </p>
           <button
             onClick={() => loadContent(level, selectedCategory, nativeLanguage)}
             className="mt-3 px-4 py-2 rounded-xl text-sm"
